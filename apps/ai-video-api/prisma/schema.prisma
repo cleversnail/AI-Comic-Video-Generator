@@ -1,0 +1,198 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  projects Project[]
+  apiKeys  UserApiKey[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?  @db.Text
+  style       String?
+  aspectRatio String   @default("9:16") @map("aspect_ratio")
+  status      String   @default("draft")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  characters Character[]
+  storyboard Storyboard[]
+  shots      Shot[]
+  tasks      GenerationTask[]
+  preference ModelPreference?
+
+  @@map("projects")
+}
+
+model Character {
+  id          String  @id @default(uuid())
+  name        String
+  gender      String?
+  age         Int?
+  role        String?
+  personality String? @db.Text
+  appearance  String? @db.Text
+  outfit      String? @db.Text
+  prompt      String? @db.Text
+  mainImage   String? @map("main_image")
+  images      Json?
+
+  projectId String  @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("characters")
+}
+
+model Storyboard {
+  id          String  @id @default(uuid())
+  sequence    Int
+  description String? @db.Text
+  scene       String?
+  emotion     String?
+  duration    Int     @default(3000)
+  characters  Json?
+
+  projectId String  @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  shots Shot[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("storyboards")
+}
+
+model Shot {
+  id          String  @id @default(uuid())
+  sequence    Int
+  prompt      String? @db.Text
+  negativePrompt String? @map("negative_prompt") @db.Text
+  params      Json?
+  status      String  @default("pending")
+  resultUrl   String? @map("result_url") @db.Text
+  duration    Int     @default(3000)
+
+  storyboardId String      @map("storyboard_id")
+  storyboard   Storyboard  @relation(fields: [storyboardId], references: [id], onDelete: Cascade)
+  projectId    String      @map("project_id")
+  project      Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  tasks GenerationTask[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("shots")
+}
+
+model UserApiKey {
+  id            String   @id @default(uuid())
+  alias         String
+  keyEncrypted  String   @map("key_encrypted")
+  keyMask       String   @map("key_mask")
+  status        String   @default("unverified")
+  isDefault     Boolean  @default(false) @map("is_default")
+  lastVerifiedAt DateTime? @map("last_verified_at")
+  totalCalls    Int      @default(0) @map("total_calls")
+  estimatedCost Float    @default(0) @map("estimated_cost")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  modelId String  @map("model_id")
+  model   AIModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("user_api_keys")
+}
+
+model ModelPreference {
+  id       String @id @default(uuid())
+  defaults Json
+
+  projectId String  @unique @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("model_preferences")
+}
+
+model AIModel {
+  id          String  @id
+  name        String
+  provider    String
+  capability  String
+  icon        String?
+  description String? @db.Text
+  docUrl      String? @map("doc_url")
+  pricingUrl  String? @map("pricing_url")
+  apiBaseUrl  String? @map("api_base_url")
+  parameters  Json?
+  supports    Json?
+  status      String  @default("active")
+  billingUnit String? @map("billing_unit")
+  billingRule Json?   @map("billing_rule")
+
+  apiKeys UserApiKey[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_models")
+}
+
+model GenerationTask {
+  id         String  @id @default(uuid())
+  capability String
+  modelId    String  @map("model_id")
+  apiKeyId   String  @map("api_key_id")
+  parameters Json?
+  input      Json?
+  status     String  @default("pending")
+  progress   Int     @default(0)
+  result     Json?
+  error      Json?
+  retryCount Int     @default(0) @map("retry_count")
+  startedAt  DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  projectId String  @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  shotId    String? @map("shot_id")
+  shot      Shot?   @relation(fields: [shotId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("generation_tasks")
+}
