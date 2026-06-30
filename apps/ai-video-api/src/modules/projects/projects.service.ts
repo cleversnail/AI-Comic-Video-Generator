@@ -1,28 +1,19 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UserService } from '../common/user.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
-
-  private async ensureUserExists(userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      await this.prisma.user.create({
-        data: {
-          id: userId,
-          email: `${userId}@temp.local`,
-          name: '临时用户',
-        },
-      });
-    }
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly userService: UserService,
+  ) {}
 
   async listProjects(userId: string) {
-    await this.ensureUserExists(userId);
+    await this.userService.ensureUserExists(userId);
     const projects = await this.prisma.project.findMany({
       where: { userId },
       orderBy: { updatedAt: 'desc' },
@@ -65,7 +56,7 @@ export class ProjectsService {
   }
 
   async createProject(userId: string, dto: CreateProjectDto) {
-    await this.ensureUserExists(userId);
+    await this.userService.ensureUserExists(userId);
 
     const project = await this.prisma.project.create({
       data: {

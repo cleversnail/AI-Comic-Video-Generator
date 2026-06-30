@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UserService } from '../common/user.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 import { UpdateModelPreferenceDto } from './dto/update-model-preference.dto';
@@ -11,25 +12,8 @@ export class ModelsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly adapterFactory: AdapterFactory,
+    private readonly userService: UserService,
   ) {}
-
-  // 临时方案：确保用户存在（后续替换为真实鉴权）
-  private async ensureUserExists(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      this.logger.log(`Creating temp user ${userId}`);
-      await this.prisma.user.create({
-        data: {
-          id: userId,
-          email: `${userId}@temp.local`,
-          name: '临时用户',
-        },
-      });
-    }
-  }
 
   async listModels(capability?: string) {
     const where = capability ? { capability } : {};
@@ -62,7 +46,7 @@ export class ModelsService {
     this.logger.log(`Creating API key for model ${dto.modelId}, user ${userId}`);
 
     // 临时方案：确保用户存在
-    await this.ensureUserExists(userId);
+    await this.userService.ensureUserExists(userId);
 
     const model = await this.prisma.aIModel.findUnique({
       where: { id: dto.modelId },

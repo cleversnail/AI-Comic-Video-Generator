@@ -6,30 +6,40 @@ import { KlingImageAdapter } from '../../modules/models/adapters/kling-image.ada
 
 export type CapabilityType = 'llm' | 'image' | 'video' | 'tts' | 'music' | 'sound';
 
+interface AdapterEntry {
+  adapter: BaseAdapter;
+  capability: CapabilityType;
+}
+
 @Injectable()
 export class AdapterFactory {
-  private readonly adapters: Map<string, BaseAdapter> = new Map();
+  private readonly adapters: Map<string, AdapterEntry> = new Map();
 
   constructor(
     private readonly deepSeekAdapter: DeepSeekAdapter,
     private readonly fluxAdapter: FluxAdapter,
     private readonly klingImageAdapter: KlingImageAdapter,
   ) {
-    this.register('deepseek-v3', deepSeekAdapter);
-    this.register('flux', fluxAdapter);
-    this.register('kling-image', klingImageAdapter);
+    this.register('deepseek-v3', deepSeekAdapter, 'llm');
+    this.register('flux', fluxAdapter, 'image');
+    this.register('kling-image', klingImageAdapter, 'image');
   }
 
-  private register(modelId: string, adapter: BaseAdapter) {
-    this.adapters.set(modelId, adapter);
+  private register(modelId: string, adapter: BaseAdapter, capability: CapabilityType) {
+    this.adapters.set(modelId, { adapter, capability });
   }
 
   getAdapter<T extends BaseAdapter>(capability: CapabilityType, modelId: string): T {
-    const adapter = this.adapters.get(modelId);
-    if (!adapter) {
+    const entry = this.adapters.get(modelId);
+    if (!entry) {
       throw new Error(`No adapter found for model ${modelId} with capability ${capability}`);
     }
-    return adapter as T;
+    if (entry.capability !== capability) {
+      throw new Error(
+        `Adapter for model ${modelId} has capability ${entry.capability}, but ${capability} was requested`,
+      );
+    }
+    return entry.adapter as T;
   }
 
   getLLMAdapter(modelId: string): LLMAdapter {

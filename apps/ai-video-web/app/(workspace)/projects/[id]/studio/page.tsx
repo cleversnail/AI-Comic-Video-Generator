@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { PlayIcon, ImageIcon, WandIcon } from "@/components/icons";
 import { projectsApi, storyboardApi, ShotPreview } from "@/lib/api";
 import Link from "next/link";
+import { BackButton } from "@/components/navigation/back-button";
 
 const tabs = [
   { id: "story", label: "故事" },
@@ -37,7 +38,7 @@ export default function StudioPage() {
     <div className="h-screen flex flex-col bg-cinema">
       <header className="h-16 border-b border-divider bg-panel-deep flex items-center justify-between px-6 flex-shrink-0">
         <div className="flex items-center gap-4">
-          <Link href="/projects" className="text-text-secondary hover:text-white transition-colors">← 返回</Link>
+          <BackButton href="/projects" label="项目列表" />
           <div className="w-px h-6 bg-divider" />
           <h1 className="font-display text-lg font-semibold text-white">{project?.name||"加载中..."}</h1>
           {project?.status&&<Badge variant={project.status==="draft"?"info":"success"} className="ml-2">{project.status==="draft"?"草稿":"进行中"}</Badge>}

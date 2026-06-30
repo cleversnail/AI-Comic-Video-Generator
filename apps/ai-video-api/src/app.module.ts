@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ModelsModule } from './modules/models/models.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { StoryboardModule } from './modules/storyboard/storyboard.module';
+import { CommonModule } from './modules/common/common.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { StoryboardModule } from './modules/storyboard/storyboard.module';
       isGlobal: true,
     }),
     PrismaModule,
+    CommonModule,
     ModelsModule,
     ProjectsModule,
     StoryboardModule,

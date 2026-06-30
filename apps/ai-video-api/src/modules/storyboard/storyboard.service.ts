@@ -111,39 +111,25 @@ export class StoryboardService {
     return storyboard;
   }
 
-  private async callLLM(modelId: string, apiKey: string, baseUrl: string | undefined, systemPrompt: string, userPrompt: string) {
-    // 动态获取 adapter
-    const adapterFactory = (await import('../../common/adapters/adapter.factory'))
-      .AdapterFactory;
-    
-    // 不太好直接用，我们直接通过 axios 调用 DeepSeek
-    const { default: axios } = await import('axios');
-    
-    const url = `${baseUrl || 'https://api.deepseek.com'}/chat/completions`;
-    const response = await axios.post(
-      url,
-      {
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.8,
-        max_tokens: 4000,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
+    private async callLLM(modelId: string, apiKey: string, baseUrl: string | undefined, systemPrompt: string, userPrompt: string) {
+    try {
+      const llmAdapter = this.adapterFactory.getLLMAdapter(modelId);
+      const result = await llmAdapter.generateText(
+        {
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.8,
+          maxTokens: 4000,
         },
-        timeout: 60000,
-      }
-    );
-
-    return {
-      content: response.data.choices?.[0]?.message?.content || '',
-      usage: response.data.usage,
-    };
+        { apiKey, baseUrl }
+      );
+      return { content: result.content, usage: result.usage };
+    } catch (error: any) {
+      this.logger.error(`LLM adapter error for model ${modelId}: ${error.message}`);
+      throw new Error(`AI 调用失败: ${error.message}`);
+    }
   }
 
   private buildSystemPrompt(style?: string): string {
