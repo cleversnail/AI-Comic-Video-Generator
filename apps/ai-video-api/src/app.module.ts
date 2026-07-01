@@ -8,6 +8,8 @@ import { ModelsModule } from './modules/models/models.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { StoryboardModule } from './modules/storyboard/storyboard.module';
 import { CharactersModule } from './modules/characters/characters.module';
+import { ComposeModule } from './modules/compose/compose.module';
+import { GenerationsModule } from './modules/generations/generations.module';
 import { CommonModule } from './modules/common/common.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { StorageModule } from './modules/storage/storage.module';
@@ -26,6 +28,8 @@ import { StorageModule } from './modules/storage/storage.module';
     ProjectsModule,
     StoryboardModule,
     CharactersModule,
+    ComposeModule,
+    GenerationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
