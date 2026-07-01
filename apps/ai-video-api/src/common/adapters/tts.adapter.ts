@@ -3,14 +3,16 @@ import { BaseAdapter, KeyValidationResult } from './base.adapter';
 export interface TTSInput {
   text: string;
   voiceId?: string;
+  language?: string;
   speed?: number;
+  emotion?: string;
 }
 
-export interface AudioResult {
-  url: string;
+export interface TTSResult {
+  audioUrl: string;
   duration?: number;
 }
 
 export interface TTSAdapter extends BaseAdapter {
-  synthesize(input: TTSInput, config: { apiKey: string; baseUrl?: string }): Promise<AudioResult>;
+  generateSpeech(input: TTSInput, config: { apiKey: string; baseUrl?: string }): Promise<TTSResult>;
 }

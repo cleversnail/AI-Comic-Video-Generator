@@ -4,6 +4,7 @@ import { DeepSeekAdapter } from '../../modules/models/adapters/deepseek.adapter'
 import { FluxAdapter } from '../../modules/models/adapters/flux.adapter';
 import { KlingImageAdapter } from '../../modules/models/adapters/kling-image.adapter';
 import { KlingVideoAdapter } from '../../modules/models/adapters/kling-video.adapter';
+import { MiniMaxTTSAdapter } from '../../modules/models/adapters/minimax-tts.adapter';
 
 export type CapabilityType = 'llm' | 'image' | 'video' | 'tts' | 'music' | 'sound';
 
@@ -21,11 +22,13 @@ export class AdapterFactory {
     private readonly fluxAdapter: FluxAdapter,
     private readonly klingImageAdapter: KlingImageAdapter,
     private readonly klingVideoAdapter: KlingVideoAdapter,
+    private readonly minimaxTTSAdapter: MiniMaxTTSAdapter,
   ) {
     this.register('deepseek-v3', deepSeekAdapter, 'llm');
     this.register('flux', fluxAdapter, 'image');
     this.register('kling-image', klingImageAdapter, 'image');
     this.register('kling-pro', klingVideoAdapter, 'video');
+    this.register('minimax-tts', minimaxTTSAdapter, 'tts');
   }
 
   private register(modelId: string, adapter: BaseAdapter, capability: CapabilityType) {
