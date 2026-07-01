@@ -7,11 +7,12 @@ import { AdapterFactory } from '../../common/adapters/adapter.factory';
 import { DeepSeekAdapter } from './adapters/deepseek.adapter';
 import { FluxAdapter } from './adapters/flux.adapter';
 import { KlingImageAdapter } from './adapters/kling-image.adapter';
+import { KlingVideoAdapter } from './adapters/kling-video.adapter';
 
 @Module({
   imports: [PrismaModule, HttpModule],
   controllers: [ModelsController],
-  providers: [ModelsService, AdapterFactory, DeepSeekAdapter, FluxAdapter, KlingImageAdapter],
+  providers: [ModelsService, AdapterFactory, DeepSeekAdapter, FluxAdapter, KlingImageAdapter, KlingVideoAdapter],
   exports: [ModelsService, AdapterFactory],
 })
 export class ModelsModule {}
