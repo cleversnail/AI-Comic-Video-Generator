@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
+import { CaptchaService } from './captcha.service';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
@@ -12,9 +13,15 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly captchaService: CaptchaService,
   ) {}
 
   async register(dto: RegisterDto) {
+    // Verify captcha
+    if (!this.captchaService.verify(dto.captchaId, dto.captchaText)) {
+      throw new UnauthorizedException('验证码错误或已过期');
+    }
+
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });

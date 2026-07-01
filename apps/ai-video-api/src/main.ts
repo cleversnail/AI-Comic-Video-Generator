@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { ValidationPipe } from '@nestjs/common';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -13,6 +14,7 @@ async function bootstrap() {
   }));
   
   app.useGlobalFilters(new GlobalExceptionFilter());
+  // Rate limiting guard will be applied per-module via decorators
   
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',

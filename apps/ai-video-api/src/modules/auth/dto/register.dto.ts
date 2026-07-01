@@ -14,4 +14,12 @@ export class RegisterDto {
   @ApiProperty({ example: '张三', required: false })
   @IsString()
   name?: string;
+
+  @ApiProperty({ description: '验证码 ID', example: 'abc123' })
+  @IsString()
+  captchaId: string;
+
+  @ApiProperty({ description: '验证码文本', example: 'aB3x' })
+  @IsString()
+  captchaText: string;
 }
