@@ -1,10 +1,14 @@
-import { Controller, Post, Body, Param, Get, Delete } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Post, Body, Param, Get, Delete, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { StoryboardService } from './storyboard.service';
 import { GenerateShotsDto } from './dto/generate-shots.dto';
 import { GeneratePreviewDto } from './dto/generate-preview.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @ApiTags('分镜')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('projects/:projectId/storyboard')
 export class StoryboardController {
   constructor(private readonly storyboardService: StoryboardService) {}
@@ -18,20 +22,22 @@ export class StoryboardController {
   @Post('generate')
   @ApiOperation({ summary: 'AI 生成分镜' })
   async generateShots(
+    @CurrentUser('id') userId: string,
     @Param('projectId') projectId: string,
     @Body() dto: GenerateShotsDto,
   ) {
-    return this.storyboardService.generateShots(projectId, dto);
+    return this.storyboardService.generateShots(userId, projectId, dto);
   }
 
   @Post('shots/:shotId/preview')
   @ApiOperation({ summary: '生成分镜静态预览图' })
   async generatePreview(
+    @CurrentUser('id') userId: string,
     @Param('projectId') projectId: string,
     @Param('shotId') shotId: string,
     @Body() dto: GeneratePreviewDto,
   ) {
-    return this.storyboardService.generatePreview(projectId, shotId, dto);
+    return this.storyboardService.generatePreview(userId, projectId, shotId, dto);
   }
 
   @Delete('shots/:shotId')

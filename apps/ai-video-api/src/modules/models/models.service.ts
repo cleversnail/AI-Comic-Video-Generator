@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserService } from '../common/user.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
@@ -13,6 +15,7 @@ export class ModelsService {
     private readonly prisma: PrismaService,
     private readonly adapterFactory: AdapterFactory,
     private readonly userService: UserService,
+    private readonly configService: ConfigService,
   ) {}
 
   async listModels(capability?: string) {
@@ -91,8 +94,8 @@ export class ModelsService {
       });
     }
 
-    // 加密存储 Key（先用简单 base64，生产环境应使用 AES-256-GCM + KMS）
-    const keyEncrypted = Buffer.from(dto.apiKey).toString('base64');
+    // AES-256-GCM 加密存储 Key
+    const keyEncrypted = this.encryptApiKey(dto.apiKey);
     const keyMask = `${dto.apiKey.slice(0, 4)}****${dto.apiKey.slice(-4)}`;
 
     const apiKey = await this.prisma.userApiKey.create({
@@ -210,7 +213,32 @@ export class ModelsService {
       throw new NotFoundException('API Key not found');
     }
 
-    return Buffer.from(key.keyEncrypted, 'base64').toString('utf-8');
+    return this.decryptApiKey(key.keyEncrypted);
+  }
+
+  private encryptApiKey(apiKey: string): string {
+    const secret = this.configService.get<string>('JWT_SECRET', 'your-jwt-secret');
+    // Derive a 32-byte key from the secret
+    const key = crypto.scryptSync(secret, 'ai-video-salt', 32);
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    let encrypted = cipher.update(apiKey, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag().toString('hex');
+    return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+  }
+
+  private decryptApiKey(encryptedData: string): string {
+    const secret = this.configService.get<string>('JWT_SECRET', 'your-jwt-secret');
+    const key = crypto.scryptSync(secret, 'ai-video-salt', 32);
+    const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(authTagHex, 'hex');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
   }
 
   async resolveApiKey(userId: string, projectId: string, capability: string): Promise<{ apiKey: string; modelId: string; baseUrl?: string }> {

@@ -24,8 +24,7 @@ export class StoryboardService {
     return { data: shots };
   }
 
-  async generateShots(projectId: string, dto: GenerateShotsDto) {
-    const userId = 'temp-user-id';
+  async generateShots(userId: string, projectId: string, dto: GenerateShotsDto) {
 
     // 验证项目存在
     const project = await this.prisma.project.findFirst({
@@ -212,8 +211,7 @@ ${style ? `5. 画面风格：${style}` : ''}
     return { success: true };
   }
 
-  async generatePreview(projectId: string, shotId: string, dto: GeneratePreviewDto) {
-    const userId = 'temp-user-id';
+  async generatePreview(userId: string, projectId: string, shotId: string, dto: GeneratePreviewDto) {
 
     const shot = await this.prisma.shot.findFirst({
       where: { id: shotId, projectId },
