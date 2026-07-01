@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { FilmIcon, SparklesIcon, ChevronRightIcon } from "@/components/icons";
+import { AuthNav } from "@/components/navigation/auth-nav";
 import Link from "next/link";
 
 const exampleFrames = [
@@ -33,16 +34,18 @@ export default function HomePage() {
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FilmIcon className="w-6 h-6 text-anime-purple" />
-            <span className="font-display text-lg font-bold text-white">AI 漫剧创作台</span>
+            <span className="font-display text-lg font-bold text-text-primary">AI 漫剧创作台</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-text-secondary">
-            <a href="#features" className="hover:text-white transition-colors">功能</a>
-            <a href="#workflow" className="hover:text-white transition-colors">流程</a>
-            <a href="#models" className="hover:text-white transition-colors">模型</a>
+            <a href="#features" className="hover:text-text-primary transition-colors">功能</a>
+            <a href="#workflow" className="hover:text-text-primary transition-colors">流程</a>
+            <a href="#models" className="hover:text-text-primary transition-colors">模型</a>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm">登录</Button>
-            <Link href="/projects"><Button size="sm">开始创作</Button></Link>
+            <AuthNav />
+            <Link href="/projects">
+              <Button size="sm">开始创作</Button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -55,7 +58,7 @@ export default function HomePage() {
                 <SparklesIcon className="w-3.5 h-3.5" />
                 支持自定义 AI 模型与 API Key
               </div>
-              <h1 className="font-display text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
+              <h1 className="font-display text-5xl md:text-6xl font-bold text-text-primary leading-tight mb-6">
                 3 分钟，<br />把故事变成<span className="text-anime-purple">漫剧</span>
               </h1>
               <p className="text-lg text-text-secondary mb-8 leading-relaxed">
@@ -90,14 +93,14 @@ export default function HomePage() {
 
       <section id="features" className="relative z-10 container mx-auto px-6 py-20 border-t border-divider/50">
         <div className="text-center max-w-2xl mx-auto mb-14">
-          <h2 className="font-display text-3xl font-bold text-white mb-4">为创作者设计的完整工作流</h2>
+          <h2 className="font-display text-3xl font-bold text-text-primary mb-4">为创作者设计的完整工作流</h2>
           <p className="text-text-secondary">从角色到视频，每一步都有 AI 辅助，但控制权始终在你手中</p>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           {[{ title: "极速出片", desc: "新手 3 步就能看到第一条漫剧草稿，先建立成就感，再决定要不要精修。", icon: "⚡" }, { title: "镜头语言引导", desc: "不用背提示词术语，选择景别、角度、运镜，系统自动生成专业视频提示词。", icon: "🎬" }, { title: "模型自由组合", desc: "角色图用 FLUX，视频用可灵，配音用 ElevenLabs——每个环节都用你信任的模型。", icon: "🔧" }].map((feature, index) => (
             <motion.div key={feature.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: index * 0.1 }} className="p-6 rounded-xl bg-panel-deep border border-divider hover:border-anime-purple/40 transition-colors">
               <div className="text-3xl mb-4">{feature.icon}</div>
-              <h3 className="font-display text-lg font-semibold text-white mb-2">{feature.title}</h3>
+              <h3 className="font-display text-lg font-semibold text-text-primary mb-2">{feature.title}</h3>
               <p className="text-sm text-text-secondary leading-relaxed">{feature.desc}</p>
             </motion.div>
           ))}
@@ -105,12 +108,12 @@ export default function HomePage() {
       </section>
 
       <section id="workflow" className="relative z-10 container mx-auto px-6 py-20 border-t border-divider/50">
-        <h2 className="font-display text-3xl font-bold text-white mb-12 text-center">极速模式：4 步出片</h2>
+        <h2 className="font-display text-3xl font-bold text-text-primary mb-12 text-center">极速模式：4 步出片</h2>
         <div className="grid md:grid-cols-4 gap-4">
           {steps.map((step, index) => (
             <motion.div key={step.number} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: index * 0.1 }} className="relative p-6 rounded-xl bg-panel-deep border border-divider">
               <span className="font-mono text-4xl font-bold text-anime-purple/20">{step.number}</span>
-              <h3 className="font-display text-lg font-semibold text-white mt-2 mb-2">{step.title}</h3>
+              <h3 className="font-display text-lg font-semibold text-text-primary mt-2 mb-2">{step.title}</h3>
               <p className="text-sm text-text-secondary">{step.desc}</p>
               {index < steps.length - 1 && (<div className="hidden md:block absolute top-1/2 -right-3 transform -translate-y-1/2"><ChevronRightIcon className="w-5 h-5 text-divider" /></div>)}
             </motion.div>
@@ -121,7 +124,7 @@ export default function HomePage() {
       <section className="relative z-10 container mx-auto px-6 py-20">
         <div className="relative overflow-hidden rounded-2xl bg-panel-deep border border-divider p-10 md:p-16 text-center">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-transparent via-anime-purple to-transparent" />
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">准备好开始你的第一部漫剧了吗？</h2>
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-text-primary mb-4">准备好开始你的第一部漫剧了吗？</h2>
           <p className="text-text-secondary mb-8 max-w-lg mx-auto">无需信用卡，配置好你的模型 API Key 即可开始创作</p>
           <Link href="/projects"><Button size="lg">立即创作第一条漫剧</Button></Link>
         </div>
@@ -129,7 +132,7 @@ export default function HomePage() {
 
       <footer className="relative z-10 border-t border-divider/50 py-8">
         <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-text-secondary">
-          <div className="flex items-center gap-2"><FilmIcon className="w-5 h-5 text-anime-purple" /><span className="font-display font-semibold text-white">AI 漫剧创作台</span></div>
+          <div className="flex items-center gap-2"><FilmIcon className="w-5 h-5 text-anime-purple" /><span className="font-display font-semibold text-text-primary">AI 漫剧创作台</span></div>
           <p>© 2026 AI 漫剧创作台. All rights reserved.</p>
         </div>
       </footer>
