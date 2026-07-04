@@ -30,4 +30,14 @@ export class CreateCharacterDto {
   @IsString()
   @IsOptional()
   appearance?: string;
+
+  @ApiProperty({ example: '白色衬衫配蓝色格子裙', required: false })
+  @IsString()
+  @IsOptional()
+  outfit?: string;
+
+  @ApiProperty({ example: 'medium', required: false, enum: ['loose', 'medium', 'strict'] })
+  @IsString()
+  @IsOptional()
+  lockLevel?: string;
 }

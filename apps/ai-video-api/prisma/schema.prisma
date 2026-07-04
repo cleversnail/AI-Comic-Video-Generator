@@ -59,6 +59,9 @@ model Character {
   prompt      String? @db.Text
   mainImage   String? @map("main_image")
   images      Json?
+  viewImages  Json?   @map("view_images")     // 四视图 {front, three_quarter, side, back}
+  variants    Json?                           // 变体集合 [{type, imageUrl, description}]
+  lockLevel   String? @map("lock_level")      // loose | medium | strict
 
   projectId String  @map("project_id")
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -97,6 +100,8 @@ model Shot {
   params      Json?
   status      String  @default("pending")
   resultUrl   String? @map("result_url") @db.Text
+  firstFrameUrl  String? @map("first_frame_url") @db.Text   // 首帧
+  lastFrameUrl   String? @map("last_frame_url") @db.Text    // 尾帧
   duration    Int     @default(3000)
 
   storyboardId String      @map("storyboard_id")
