@@ -67,7 +67,7 @@ export const authApi = {
       return result;
     }),
   getCaptcha: () =>
-    api.get<{ data: { id: string; svg: string } }>("/auth/captcha").then((r) => r.data.data),
+    api.get<{ id: string; svg: string }>("/auth/captcha").then((r) => r.data),
   logout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
