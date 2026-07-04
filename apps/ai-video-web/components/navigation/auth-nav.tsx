@@ -36,11 +36,19 @@ export function AuthNav() {
     );
   }
 
+  const handleLogout = () => {
+    if (window.confirm('确定要退出登录吗？')) {
+      authApi.logout();
+      setLoggedIn(false);
+      router.push('/');
+    }
+  };
+
   return (
     <div className="flex items-center gap-3">
       <span className="text-sm text-text-secondary">{name}</span>
       <button
-        onClick={() => { authApi.logout(); setLoggedIn(false); router.push('/login'); }}
+        onClick={handleLogout}
         className="text-xs text-text-disabled hover:text-warm-orange transition-colors"
       >
         退出
