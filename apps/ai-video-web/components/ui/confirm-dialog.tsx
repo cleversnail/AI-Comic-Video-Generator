@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 interface ConfirmDialogProps {
@@ -48,11 +49,11 @@ export function ConfirmDialog({
 
   if (!open) return null;
 
-  return (
+  const dialog = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
@@ -62,7 +63,6 @@ export function ConfirmDialog({
         className={cn(
           "relative z-10 w-full max-w-sm mx-4",
           "bg-panel-deep border border-divider rounded-2xl shadow-2xl",
-          "animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-200"
         )}
       >
         {/* Top accent line */}
@@ -140,4 +140,7 @@ export function ConfirmDialog({
       </div>
     </div>
   );
+
+  // Portal to body so fixed positioning is always relative to viewport
+  return createPortal(dialog, document.body);
 }
