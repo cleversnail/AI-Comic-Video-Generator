@@ -50,7 +50,7 @@ export interface ShotPreview extends Shot { characterPrompt?: string; scenePromp
 // ==================== Auth API ====================
 
 export const authApi = {
-  register: (data: { email: string; password: string; name?: string }) =>
+  register: (data: { email: string; password: string; name?: string; captchaId: string; captchaText: string }) =>
     api.post<{ data: AuthResponse }>("/auth/register", data).then((r) => {
       const result = r.data.data;
       if (typeof window !== 'undefined') {
@@ -66,6 +66,8 @@ export const authApi = {
       }
       return result;
     }),
+  getCaptcha: () =>
+    api.get<{ data: { id: string; svg: string } }>("/auth/captcha").then((r) => r.data.data),
   logout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
