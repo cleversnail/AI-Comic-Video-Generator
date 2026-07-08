@@ -1,0 +1,11 @@
+﻿node_modules/
+.next/
+dist/
+.env
+*.local
+.DS_Store
+
+# Tool config
+.agents/
+.claude/
+skills-lock.json
