@@ -216,8 +216,11 @@ export class ModelsService {
     return this.decryptApiKey(key.keyEncrypted);
   }
 
-  private encryptApiKey(apiKey: string): string {
-    const secret = this.configService.get<string>('JWT_SECRET', 'your-jwt-secret');
+ private encryptApiKey(apiKey: string): string {
+    const secret = this.configService.get<string>('ENCRYPTION_KEY');
+    if (!secret) {
+      throw new Error('ENCRYPTION_KEY is not configured. API Key encryption requires a dedicated secret.');
+    }
     // Derive a 32-byte key from the secret
     const key = crypto.scryptSync(secret, 'ai-video-salt', 32);
     const iv = crypto.randomBytes(16);
@@ -229,7 +232,10 @@ export class ModelsService {
   }
 
   private decryptApiKey(encryptedData: string): string {
-    const secret = this.configService.get<string>('JWT_SECRET', 'your-jwt-secret');
+    const secret = this.configService.get<string>('ENCRYPTION_KEY');
+    if (!secret) {
+      throw new Error('ENCRYPTION_KEY is not configured. API Key decryption requires a dedicated secret.');
+    }
     const key = crypto.scryptSync(secret, 'ai-video-salt', 32);
     const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
     const iv = Buffer.from(ivHex, 'hex');

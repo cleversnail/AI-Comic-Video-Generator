@@ -17,7 +17,7 @@ export class StoryboardService {
 
   async listShots(projectId: string) {
     const shots = await this.prisma.shot.findMany({
-      where: { projectId },
+      where: { projectId, status: { not: 'archived' } },
       orderBy: { sequence: 'asc' },
     });
 
@@ -45,9 +45,6 @@ export class StoryboardService {
     // 调用 LLM 生成分镜
     let shotsData: any[];
     try {
-      // 通过 AdapterFactory 获取 LLM Adapter
-      const { AdapterFactory } = await import('../../common/adapters/adapter.factory');
-      // 我们直接使用 ModelsService 中已注册的 adapter
       const result = await this.callLLM(modelId, apiKey, baseUrl, systemPrompt, userPrompt);
       
       // 解析 LLM 返回的 JSON
@@ -57,8 +54,21 @@ export class StoryboardService {
       throw new BadRequestException(`分镜生成失败: ${error.message}`);
     }
 
-    // 删除旧分镜
-    await this.prisma.shot.deleteMany({ where: { projectId } });
+    // 归档旧分镜（保留历史版本而非物理删除）
+    const existingShots = await this.prisma.shot.findMany({ where: { projectId } });
+    if (existingShots.length > 0) {
+      await Promise.all(
+        existingShots.map((shot) =>
+          this.prisma.shot.update({
+            where: { id: shot.id },
+            data: {
+              params: { ...(shot.params as any), archived: true, archivedAt: new Date().toISOString() },
+              status: 'archived',
+            },
+          }),
+        ),
+      );
+    }
 
     // 写入新分镜
     const storyboard = await this.getOrCreateStoryboard(projectId);

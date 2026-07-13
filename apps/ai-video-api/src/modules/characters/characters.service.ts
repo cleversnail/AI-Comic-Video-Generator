@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
+import { ModelsService } from '../models/models.service';
 import { StorageService } from '../storage/storage.service';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
@@ -12,6 +13,7 @@ export class CharactersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly adapterFactory: AdapterFactory,
+    private readonly modelsService: ModelsService,
     private readonly storageService: StorageService,
   ) {}
 
@@ -201,26 +203,8 @@ export class CharactersService {
   }
 
   private async resolveImageKey(userId: string, projectId: string) {
-    // Reuse models service logic to find an image model key
-    const allKeys = await this.prisma.userApiKey.findMany({
-      where: { userId, status: 'valid' },
-      include: { model: true },
-      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
-    });
-    const imageKey = allKeys.find((k) => k.model.capability === 'image');
-    if (!imageKey) throw new NotFoundException('未配置图像生成模型的 API Key');
-
-    const secret = this.prisma.$queryRaw`SELECT key_encrypted FROM user_api_keys WHERE id = ${imageKey.id}`;
-    // Use crypto to decrypt
-    const crypto = require('crypto');
-    const configService = (this as any).configService;
-    // Simple fallback: just return the key info
-    return {
-      apiKey: '', // Will be resolved by adapter
-      modelId: imageKey.modelId,
-      baseUrl: imageKey.model.apiBaseUrl || undefined,
-      apiKeyId: imageKey.id,
-    };
+    const { apiKey, modelId, baseUrl } = await this.modelsService.resolveApiKey(userId, projectId, 'image');
+    return { apiKey, modelId, baseUrl };
   }
 
   private async verifyProjectAccess(userId: string, projectId: string) {

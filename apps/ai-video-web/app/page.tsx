@@ -65,9 +65,8 @@ export default function HomePage() {
                 输入角色和故事，AI 自动分镜、生成画面、配音、合成视频。可灵、豆包、DeepSeek……每个环节都使用你选择的模型。
               </p>
               <div className="flex flex-wrap gap-4">
-                <Link href="/quick-create"><Button size="lg" className="gap-2">⚡ 极速模式：3分钟出片<ChevronRightIcon className="w-4 h-4" /></Button></Link>
-                <Link href="/projects"><Button variant="outline" size="lg">专业模式</Button></Link>
-                <Link href="/settings/models"><Button variant="ghost" size="lg">配置模型</Button></Link>
+                <Link href="/projects"><Button size="lg" className="gap-2">立即创作第一条漫剧<ChevronRightIcon className="w-4 h-4" /></Button></Link>
+                <Link href="/settings/models"><Button variant="outline" size="lg">配置模型</Button></Link>
               </div>
             </motion.div>
           </div>
@@ -127,10 +126,7 @@ export default function HomePage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-transparent via-anime-purple to-transparent" />
           <h2 className="font-display text-3xl md:text-4xl font-bold text-text-primary mb-4">准备好开始你的第一部漫剧了吗？</h2>
           <p className="text-text-secondary mb-8 max-w-lg mx-auto">无需信用卡，配置好你的模型 API Key 即可开始创作</p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/quick-create"><Button size="lg">⚡ 极速模式</Button></Link>
-            <Link href="/projects"><Button variant="outline" size="lg">专业模式</Button></Link>
-          </div>
+          <Link href="/projects"><Button size="lg">立即创作第一条漫剧</Button></Link>
         </div>
       </section>
 
