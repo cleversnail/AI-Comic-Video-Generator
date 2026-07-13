@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { WebSocketProvider } from "@/components/providers/websocket-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -36,7 +37,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased bg-cinema text-foreground`}
       >
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <WebSocketProvider>{children}</WebSocketProvider>
+        </QueryProvider>
       </body>
     </html>
   );

@@ -15,6 +15,7 @@ import { GenerationsModule } from './modules/generations/generations.module';
 import { CommonModule } from './modules/common/common.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { WebSocketModule } from './modules/websocket/websocket.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { StorageModule } from './modules/storage/storage.module';
     CommonModule,
     QueueModule,
     StorageModule,
+    WebSocketModule,
     AuthModule,
     ModelsModule,
     ProjectsModule,
