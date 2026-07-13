@@ -1,0 +1,82 @@
+name: 🐞 Bug 报告
+description: 报告一个可复现的 Bug
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量把下面的字段填完整，越具体越容易定位问题。
+        如果是安全漏洞，请**不要**在这里公开，参考 [SECURITY.md](../SECURITY.md)。
+
+  - type: input
+    id: version
+    attributes:
+      label: 项目版本 / commit
+      description: 使用的分支或最近一次 commit hash
+      placeholder: "main @ 195c5d7"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 涉及模块
+      multiple: true
+      options:
+        - 后端 API (ai-video-api)
+        - 前端 Web (ai-video-web)
+        - 数据库 / Prisma
+        - 队列 / BullMQ
+        - 存储 / MinIO
+        - AI Adapter
+        - 文档 / 构建
+    validations:
+      required: true
+
+  - type: textarea
+    id: describe
+    attributes:
+      label: Bug 描述
+      description: 简要说明看到了什么、期望是什么
+      placeholder: "点击生成分镜后，接口返回 500，但日志没有堆栈..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 完整的操作步骤，越详细越好
+      placeholder: |
+        1. 打开 /projects
+        2. 创建新项目 "xxx"
+        3. 进入 studio 页面点击"生成分镜"
+        4. 看到...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: 运行环境
+      description: 操作系统 / Node 版本 / MySQL / Redis 版本等
+      placeholder: |
+        - OS: Windows 11
+        - Node: v20.11.0
+        - pnpm: 9.15.0
+        - MySQL: 8.0.36
+        - Redis: 7.2
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / 截图（可选）
+      description: 请隐去 API Key、Token 等敏感信息

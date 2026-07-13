@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 讨论与提问
+    url: https://github.com/cleversnail/AI-Comic-Video-Generator/discussions
+    about: 想聊设计思路 / 请教如何使用，请到 Discussions
+  - name: 🛡️ 报告安全漏洞
+    url: https://github.com/cleversnail/AI-Comic-Video-Generator/security/advisories/new
+    about: 安全问题请私下报告，不要开公开 Issue
