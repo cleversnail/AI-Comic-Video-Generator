@@ -43,6 +43,69 @@ export interface ModelParameter { key: string; name: string; type: "string"|"num
 export interface UserApiKey { id: string; modelId: string; keyMask: string; alias?: string; isDefault: boolean; }
 export interface Project { id: string; name: string; description?: string; status: "draft"|"in_progress"|"completed"; style?: string; aspectRatio?: string; shotCount: number; createdAt: string; updatedAt: string; }
 export interface CreateProjectDto { name: string; description?: string; style?: string; aspectRatio?: string; }
+
+// ==================== Character Types ====================
+export interface Character {
+  id: string;
+  name: string;
+  gender?: string;
+  age?: number;
+  role?: string;
+  personality?: string;
+  appearance?: string;
+  outfit?: string;
+  prompt?: string;
+  mainImage?: string;
+  images?: string[];
+  viewImages?: {
+    front?: string;
+    three_quarter?: string;
+    side?: string;
+    back?: string;
+  };
+  variants?: CharacterVariant[];
+  lockLevel?: 'loose' | 'medium' | 'strict';
+  projectId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CharacterVariant {
+  id: string;
+  type: string;
+  imageUrl: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface CreateCharacterDto {
+  name: string;
+  gender?: string;
+  age?: number;
+  role?: string;
+  personality?: string;
+  appearance?: string;
+  outfit?: string;
+  lockLevel?: 'loose' | 'medium' | 'strict';
+}
+
+export interface UpdateCharacterDto {
+  name?: string;
+  gender?: string;
+  age?: number;
+  role?: string;
+  personality?: string;
+  appearance?: string;
+  outfit?: string;
+  lockLevel?: 'loose' | 'medium' | 'strict';
+  prompt?: string;
+}
+
+export interface VariantType {
+  value: string;
+  label: string;
+  category: string;
+}
 export interface Storyboard { id: string; projectId: string; shots: Shot[]; }
 export interface Shot { id: string; sequence: number; prompt: string; imageUrl?: string; videoUrl?: string; audioUrl?: string; duration?: number; status: "pending"|"generating"|"completed"|"failed"; cameraAngle?: string; shotType?: string; }
 export interface ShotPreview extends Shot { characterPrompt?: string; scenePrompt?: string; stylePrompt?: string; }
@@ -98,6 +161,35 @@ export const projectsApi = {
   getProject: (id: string) => api.get<Project>(`/projects/${id}`).then((r) => r.data),
   createProject: (data: CreateProjectDto) => api.post<Project>("/projects", data).then((r) => r.data),
   deleteProject: (id: string) => api.delete(`/projects/${id}`).then((r) => r.data),
+};
+
+// ==================== Characters API ====================
+
+export const charactersApi = {
+  listCharacters: (projectId: string) =>
+    api.get<{ data: Character[] }>(`/projects/${projectId}/characters`).then((r) => r.data.data),
+  getCharacter: (projectId: string, characterId: string) =>
+    api.get<{ data: Character }>(`/projects/${projectId}/characters/${characterId}`).then((r) => r.data.data),
+  createCharacter: (projectId: string, data: CreateCharacterDto) =>
+    api.post<{ data: Character }>(`/projects/${projectId}/characters`, data).then((r) => r.data.data),
+  updateCharacter: (projectId: string, characterId: string, data: UpdateCharacterDto) =>
+    api.put<{ data: Character }>(`/projects/${projectId}/characters/${characterId}`, data).then((r) => r.data.data),
+  deleteCharacter: (projectId: string, characterId: string) =>
+    api.delete(`/projects/${projectId}/characters/${characterId}`).then((r) => r.data),
+  generateViews: (projectId: string, characterId: string) =>
+    api.post<{ data: { characterId: string; viewImages: Record<string, string> } }>(
+      `/projects/${projectId}/characters/${characterId}/generate-views`
+    ).then((r) => r.data.data),
+  clearViews: (projectId: string, characterId: string) =>
+    api.delete(`/projects/${projectId}/characters/${characterId}/views`).then((r) => r.data),
+  generateVariant: (projectId: string, characterId: string, variantType: string) =>
+    api.post<{ data: { characterId: string; variant: CharacterVariant } }>(
+      `/projects/${projectId}/characters/${characterId}/variants/${variantType}`
+    ).then((r) => r.data.data),
+  deleteVariant: (projectId: string, characterId: string, variantId: string) =>
+    api.delete(`/projects/${projectId}/characters/${characterId}/variants/${variantId}`).then((r) => r.data),
+  getVariantTypes: () =>
+    api.get<{ data: VariantType[] }>('/projects/0/characters/variant-types').then((r) => r.data.data),
 };
 
 // ==================== Storyboard API ====================

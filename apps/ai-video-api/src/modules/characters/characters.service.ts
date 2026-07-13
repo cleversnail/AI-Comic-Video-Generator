@@ -1,9 +1,12 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
 import { StorageService } from '../storage/storage.service';
+import { CryptoService } from '../common/crypto.service';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CharactersService {
@@ -13,6 +16,8 @@ export class CharactersService {
     private readonly prisma: PrismaService,
     private readonly adapterFactory: AdapterFactory,
     private readonly storageService: StorageService,
+    private readonly cryptoService: CryptoService,
+    private readonly configService: ConfigService,
   ) {}
 
   async listByProject(userId: string, projectId: string) {
@@ -152,7 +157,13 @@ export class CharactersService {
 
     // Append to existing variants
     const existingVariants = (character.variants as any[]) || [];
-    const newVariant = { type: variantType, imageUrl: result.url, description: variantType, createdAt: new Date().toISOString() };
+    const newVariant = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
+      type: variantType,
+      imageUrl: result.url,
+      description: this.getVariantLabel(variantType),
+      createdAt: new Date().toISOString(),
+    };
     const updatedVariants = [...existingVariants, newVariant];
 
     await this.prisma.character.update({
@@ -161,6 +172,70 @@ export class CharactersService {
     });
 
     return { data: { characterId, variant: newVariant } };
+  }
+
+  /**
+   * 删除角色变体
+   */
+  async deleteVariant(userId: string, projectId: string, characterId: string, variantId: string) {
+    await this.verifyProjectAccess(userId, projectId);
+    const character = await this.prisma.character.findFirst({
+      where: { id: characterId, projectId },
+    });
+    if (!character) throw new NotFoundException('角色不存在');
+
+    const existingVariants = (character.variants as any[]) || [];
+    const updatedVariants = existingVariants.filter((v) => v.id !== variantId);
+
+    await this.prisma.character.update({
+      where: { id: characterId },
+      data: { variants: updatedVariants },
+    });
+
+    return { data: { characterId, variantId, deleted: true } };
+  }
+
+  /**
+   * 清除角色四视图
+   */
+  async clearViewImages(userId: string, projectId: string, characterId: string) {
+    await this.verifyProjectAccess(userId, projectId);
+    const character = await this.prisma.character.findFirst({
+      where: { id: characterId, projectId },
+    });
+    if (!character) throw new NotFoundException('角色不存在');
+
+    await this.prisma.character.update({
+      where: { id: characterId },
+      data: { viewImages: Prisma.DbNull },
+    });
+
+    return { data: { characterId, cleared: true } };
+  }
+
+  /**
+   * 获取变体类型列表
+   */
+  getVariantTypes() {
+    return {
+      data: [
+        { value: 'happy', label: '开心', category: '表情' },
+        { value: 'sad', label: '悲伤', category: '表情' },
+        { value: 'angry', label: '愤怒', category: '表情' },
+        { value: 'surprised', label: '惊讶', category: '表情' },
+        { value: 'shy', label: '害羞', category: '表情' },
+        { value: 'confident', label: '自信', category: '表情' },
+        { value: 'casual', label: '休闲装', category: '服装' },
+        { value: 'formal', label: '正装', category: '服装' },
+        { value: 'school', label: '校服', category: '服装' },
+        { value: 'sport', label: '运动装', category: '服装' },
+        { value: 'fantasy', label: '奇幻装', category: '服装' },
+        { value: 'indoor', label: '室内', category: '场景' },
+        { value: 'outdoor', label: '户外', category: '场景' },
+        { value: 'night', label: '夜晚', category: '场景' },
+        { value: 'sunset', label: '黄昏', category: '场景' },
+      ],
+    };
   }
 
   /**
@@ -189,34 +264,61 @@ export class CharactersService {
 
   private getVariantDescription(type: string): string {
     const map: Record<string, string> = {
-      happy: 'happy expression, smiling, cheerful',
-      sad: 'sad expression, teary eyes, melancholic',
-      angry: 'angry expression, fierce eyes, determined',
-      surprised: 'surprised expression, wide eyes, open mouth',
-      casual: 'casual clothes, relaxed outfit',
-      formal: 'formal clothes, elegant outfit',
-      school: 'school uniform, student outfit',
+      happy: 'happy expression, smiling, cheerful, joyful',
+      sad: 'sad expression, teary eyes, melancholic, downcast',
+      angry: 'angry expression, fierce eyes, determined, frowning',
+      surprised: 'surprised expression, wide eyes, open mouth, shocked',
+      shy: 'shy expression, blushing, looking away, timid',
+      confident: 'confident expression, determined, strong gaze',
+      casual: 'casual clothes, relaxed outfit, t-shirt, jeans',
+      formal: 'formal clothes, elegant outfit, suit or dress',
+      school: 'school uniform, student outfit, blazer',
+      sport: 'sportswear, athletic outfit, tracksuit',
+      fantasy: 'fantasy costume, magical outfit, armor or robe',
+      indoor: 'indoor setting, room background, warm lighting',
+      outdoor: 'outdoor setting, nature background, daylight',
+      night: 'night scene, dark sky, moonlight, stars',
+      sunset: 'sunset scene, golden hour, warm colors, orange sky',
     };
     return map[type] || `${type} variant`;
   }
 
+  private getVariantLabel(type: string): string {
+    const map: Record<string, string> = {
+      happy: '开心表情',
+      sad: '悲伤表情',
+      angry: '愤怒表情',
+      surprised: '惊讶表情',
+      shy: '害羞表情',
+      confident: '自信表情',
+      casual: '休闲装',
+      formal: '正装',
+      school: '校服',
+      sport: '运动装',
+      fantasy: '奇幻装',
+      indoor: '室内场景',
+      outdoor: '户外场景',
+      night: '夜晚场景',
+      sunset: '黄昏场景',
+    };
+    return map[type] || type;
+  }
+
   private async resolveImageKey(userId: string, projectId: string) {
-    // Reuse models service logic to find an image model key
+    // Find a valid image model key
     const allKeys = await this.prisma.userApiKey.findMany({
       where: { userId, status: 'valid' },
       include: { model: true },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
     const imageKey = allKeys.find((k) => k.model.capability === 'image');
-    if (!imageKey) throw new NotFoundException('未配置图像生成模型的 API Key');
+    if (!imageKey) throw new NotFoundException('未配置图像生成模型的 API Key，请先在模型中心配置');
 
-    const secret = this.prisma.$queryRaw`SELECT key_encrypted FROM user_api_keys WHERE id = ${imageKey.id}`;
-    // Use crypto to decrypt
-    const crypto = require('crypto');
-    const configService = (this as any).configService;
-    // Simple fallback: just return the key info
+    // Decrypt the API key
+    const apiKey = this.cryptoService.decrypt(imageKey.keyEncrypted);
+
     return {
-      apiKey: '', // Will be resolved by adapter
+      apiKey,
       modelId: imageKey.modelId,
       baseUrl: imageKey.model.apiBaseUrl || undefined,
       apiKeyId: imageKey.id,
