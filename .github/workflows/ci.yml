@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+# 同一 PR 的新推送会取消上一次 workflow，节省额度
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: Backend · ai-video-api
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/ai-video-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: apps/ai-video-api/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm exec prisma generate
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Build
+        run: pnpm run build
+
+  web:
+    name: Frontend · ai-video-web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/ai-video-web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: apps/ai-video-web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Build
+        env:
+          # Next.js build 时需要，避免 NEXT_PUBLIC_* 缺失警告
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+        run: pnpm run build
