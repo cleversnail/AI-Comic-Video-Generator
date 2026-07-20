@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { tmpdir } from 'os';
@@ -43,7 +43,7 @@ export class ComposeService {
     if (!project) throw new BadRequestException('项目不存在');
 
     const shots = project.shots
-      .filter((s) => s.resultUrl)
+      .filter((s) => s.resultUrl && s.status !== 'archived')
       .map((shot) => ({
         imageUrl: shot.resultUrl || undefined,
         videoUrl: (shot.params as any)?.videoUrl || undefined,

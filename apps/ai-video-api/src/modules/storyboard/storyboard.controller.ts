@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get, Delete, UseGuards } from '@nestjs/common';
+﻿import { Controller, Post, Body, Param, Get, Delete, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { StoryboardService } from './storyboard.service';
 import { GenerateShotsDto } from './dto/generate-shots.dto';
@@ -15,8 +15,8 @@ export class StoryboardController {
 
   @Get()
   @ApiOperation({ summary: '获取项目的分镜列表' })
-  async listShots(@Param('projectId') projectId: string) {
-    return this.storyboardService.listShots(projectId);
+  async listShots(@CurrentUser('id') userId: string, @Param('projectId') projectId: string) {
+    return this.storyboardService.listShots(userId, projectId);
   }
 
   @Post('generate')
@@ -43,9 +43,10 @@ export class StoryboardController {
   @Delete('shots/:shotId')
   @ApiOperation({ summary: '删除分镜' })
   async deleteShot(
+    @CurrentUser('id') userId: string,
     @Param('projectId') projectId: string,
     @Param('shotId') shotId: string,
   ) {
-    return this.storyboardService.deleteShot(projectId, shotId);
+    return this.storyboardService.deleteShot(userId, projectId, shotId);
   }
 }

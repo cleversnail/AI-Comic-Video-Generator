@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ModelsService } from '../models/models.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
@@ -15,7 +15,8 @@ export class StoryboardService {
     private readonly adapterFactory: AdapterFactory,
   ) {}
 
-  async listShots(projectId: string) {
+  async listShots(userId: string, projectId: string) {
+    await this.verifyProjectAccess(userId, projectId);
     const shots = await this.prisma.shot.findMany({
       where: { projectId, status: { not: 'archived' } },
       orderBy: { sequence: 'asc' },
@@ -208,7 +209,8 @@ ${style ? `5. 画面风格：${style}` : ''}
     }
   }
 
-  async deleteShot(projectId: string, shotId: string) {
+  async deleteShot(userId: string, projectId: string, shotId: string) {
+    await this.verifyProjectAccess(userId, projectId);
     const shot = await this.prisma.shot.findFirst({
       where: { id: shotId, projectId },
     });
@@ -217,7 +219,14 @@ ${style ? `5. 画面风格：${style}` : ''}
       throw new NotFoundException('Shot not found');
     }
 
-    await this.prisma.shot.delete({ where: { id: shotId } });
+    // Soft-delete: archive instead of hard delete
+    await this.prisma.shot.update({
+      where: { id: shotId },
+      data: {
+        params: { ...(shot.params as any), archived: true, archivedAt: new Date().toISOString() },
+        status: 'archived',
+      },
+    });
     return { success: true };
   }
 
@@ -295,6 +304,15 @@ ${style ? `5. 画面风格：${style}` : ''}
       case '9:16':
       default:
         return { width: 576, height: 1024 };
+    }
+  }
+
+  private async verifyProjectAccess(userId: string, projectId: string) {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, userId },
+    });
+    if (!project) {
+      throw new NotFoundException('Project not found');
     }
   }
 }

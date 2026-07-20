@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
 import { ModelsService } from '../models/models.service';
@@ -35,6 +35,9 @@ export class KeyframeService {
       .map((c) => `${c.name}: ${c.appearance || ''} ${c.outfit || ''}`.trim())
       .join('; ');
 
+    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    const dimensions = this.getDimensionsByAspectRatio(project?.aspectRatio || '9:16');
+
     const imageAdapter = this.adapterFactory.getImageAdapter(modelId);
 
     // Generate first frame
@@ -42,7 +45,7 @@ export class KeyframeService {
     this.logger.log(`Generating first frame for shot ${shotId}`);
 
     const firstResult = await imageAdapter.generateImage(
-      { prompt: firstFramePrompt, width: 576, height: 1024 },
+      { prompt: firstFramePrompt, width: dimensions.width, height: dimensions.height },
       { apiKey, baseUrl }
     );
 
@@ -51,7 +54,7 @@ export class KeyframeService {
     this.logger.log(`Generating last frame for shot ${shotId}`);
 
     const lastResult = await imageAdapter.generateImage(
-      { prompt: lastFramePrompt, width: 576, height: 1024 },
+      { prompt: lastFramePrompt, width: dimensions.width, height: dimensions.height },
       { apiKey, baseUrl }
     );
 
@@ -114,9 +117,20 @@ export class KeyframeService {
   }
 
   private async verifyShotAccess(userId: string, projectId: string, shotId: string) {
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, userId } });
+    if (!project) throw new NotFoundException('项目不存在');
     const shot = await this.prisma.shot.findFirst({
       where: { id: shotId, projectId },
     });
     if (!shot) throw new NotFoundException('分镜不存在');
+    return { project, shot };
+  }
+
+  private getDimensionsByAspectRatio(ratio: string): { width: number; height: number } {
+    switch (ratio) {
+      case '16:9': return { width: 1024, height: 576 };
+      case '1:1': return { width: 768, height: 768 };
+      case '9:16': default: return { width: 576, height: 1024 };
+    }
   }
 }

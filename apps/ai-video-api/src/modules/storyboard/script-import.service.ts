@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+﻿import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
 import { ModelsService } from '../models/models.service';
@@ -172,15 +172,23 @@ export class ScriptImportService {
       }
     }
 
-    // Create storyboard from parsed scenes
-    const storyboard = await this.prisma.storyboard.upsert({
-      where: { id: projectId }, // This won't work perfectly but we'll handle it
-      update: {},
-      create: { projectId, sequence: 1, description: '从剧本导入' },
-    });
+    // Find or create storyboard (fix: storyboard.id is UUID, not projectId)
+    let storyboard = await this.prisma.storyboard.findFirst({ where: { projectId } });
+    if (!storyboard) {
+      storyboard = await this.prisma.storyboard.create({
+        data: { projectId, sequence: 1, description: '从剧本导入' },
+      });
+    }
 
-    // Delete old shots
-    await this.prisma.shot.deleteMany({ where: { projectId } });
+    // Archive old shots instead of hard-deleting (preserve version history)
+    const oldShots = await this.prisma.shot.findMany({ where: { projectId } });
+    for (const oldShot of oldShots) {
+      const oldParams = (oldShot.params as any) || {};
+      await this.prisma.shot.update({
+        where: { id: oldShot.id },
+        data: { params: { ...oldParams, archived: true, archivedAt: new Date().toISOString() } } },
+      });
+    }
 
     // Create shots from scenes
     const shots = [];

@@ -1,4 +1,4 @@
-import {
+﻿import {
   ExceptionFilter,
   Catch,
   ArgumentsHost,
@@ -46,8 +46,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       status = HttpStatus.BAD_REQUEST;
       message = '数据验证失败';
       code = 'VALIDATION_ERROR';
+    } else if (exception instanceof Prisma.PrismaClientUnknownRequestError) {
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
+      message = '数据库未知错误，请稍后重试';
+      code = 'DATABASE_UNKNOWN_ERROR';
+    } else if (exception instanceof Prisma.PrismaClientInitializationError) {
+      status = HttpStatus.SERVICE_UNAVAILABLE;
+      message = '数据库连接失败，请稍后重试';
+      code = 'DATABASE_CONNECTION_ERROR';
     } else if (exception instanceof Error) {
-      message = exception.message;
+      // Don't leak internal error details to client in production
+      message = process.env.NODE_ENV === 'production' ? '服务器内部错误' : exception.message;
       code = 'UNKNOWN_ERROR';
     }
 

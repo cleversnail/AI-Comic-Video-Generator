@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Put, Body, Param, Delete, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 
@@ -28,6 +29,12 @@ export class ProjectsController {
   @ApiOperation({ summary: '创建项目' })
   async createProject(@CurrentUser('id') userId: string, @Body() dto: CreateProjectDto) {
     return this.projectsService.createProject(userId, dto);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: '更新项目' })
+  async updateProject(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() dto: UpdateProjectDto) {
+    return this.projectsService.updateProject(userId, id, dto);
   }
 
   @Delete(':id')

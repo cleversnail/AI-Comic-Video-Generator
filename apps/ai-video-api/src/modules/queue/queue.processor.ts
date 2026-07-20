@@ -1,9 +1,10 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+﻿import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { Worker, Job } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
 import { ModelsService } from '../models/models.service';
+import { TaskGateway } from '../websocket/websocket.gateway';
 import { GenerationJobData } from './queue.service';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class QueueProcessor implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly adapterFactory: AdapterFactory,
     private readonly modelsService: ModelsService,
+    private readonly taskGateway: TaskGateway,
   ) {}
 
   onModuleInit() {
@@ -50,6 +52,13 @@ export class QueueProcessor implements OnModuleInit, OnModuleDestroy {
     await this.prisma.generationTask.update({
       where: { id: taskId },
       data: { status: 'processing', startedAt: new Date() },
+    });
+
+    this.taskGateway.emitTaskProgress(userId, {
+      taskId,
+      projectId: job.data.projectId,
+      status: 'processing',
+      progress: 10,
     });
 
     await job.updateProgress(10);
@@ -123,6 +132,14 @@ export class QueueProcessor implements OnModuleInit, OnModuleDestroy {
 
       await job.updateProgress(90);
 
+    this.taskGateway.emitTaskProgress(userId, {
+      taskId,
+      projectId: job.data.projectId,
+      status: 'completed',
+      progress: 100,
+      resultUrl: result?.url,
+    });
+
       // Persist result
       await this.prisma.generationTask.update({
         where: { id: taskId },
@@ -153,6 +170,12 @@ export class QueueProcessor implements OnModuleInit, OnModuleDestroy {
           retryCount: { increment: 1 },
         },
       });
+    this.taskGateway.emitTaskProgress(userId, {
+      taskId,
+      projectId: job.data.projectId,
+      status: 'failed',
+      errorMessage: error.message,
+    });
       throw error; // Let BullMQ handle retry/backoff
     }
   }

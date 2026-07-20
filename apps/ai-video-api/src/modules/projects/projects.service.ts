@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserService } from '../common/user.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Injectable()
 export class ProjectsService {
@@ -69,6 +70,26 @@ export class ProjectsService {
     });
 
     return { data: project };
+  }
+
+  async updateProject(userId: string, id: string, dto: UpdateProjectDto) {
+    const project = await this.prisma.project.findFirst({
+      where: { id, userId },
+    });
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+    const updated = await this.prisma.project.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.style !== undefined && { style: dto.style }),
+        ...(dto.aspectRatio !== undefined && { aspectRatio: dto.aspectRatio }),
+        ...(dto.status !== undefined && { status: dto.status }),
+      },
+    });
+    return { data: updated };
   }
 
   async deleteProject(userId: string, id: string) {

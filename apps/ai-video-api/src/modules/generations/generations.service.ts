@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QueueService } from '../queue/queue.service';
 import { ModelsService } from '../models/models.service';
@@ -20,8 +20,9 @@ export class GenerationsService {
     });
     if (!project) throw new NotFoundException('项目不存在');
 
-    // Resolve API Key
-    const { apiKey, apiKeyId } = await this.resolveKeyInfo(userId, projectId, dto.capability, dto.modelId);
+    // Resolve API Key (reuse ModelsService for consistent key resolution)
+    const resolved = await this.modelsService.resolveApiKey(userId, projectId, dto.capability);
+    const apiKeyId = await this.findKeyId(userId, resolved.modelId);
 
     // Create GenerationTask in DB
     const task = await this.prisma.generationTask.create({
@@ -51,6 +52,7 @@ export class GenerationsService {
   }
 
   async listTasks(userId: string, projectId: string) {
+    await this.verifyProjectAccess(userId, projectId);
     const tasks = await this.prisma.generationTask.findMany({
       where: { projectId },
       orderBy: { createdAt: 'desc' },
@@ -59,6 +61,7 @@ export class GenerationsService {
   }
 
   async getTask(userId: string, projectId: string, taskId: string) {
+    await this.verifyProjectAccess(userId, projectId);
     const task = await this.prisma.generationTask.findFirst({
       where: { id: taskId, projectId },
     });
@@ -66,16 +69,17 @@ export class GenerationsService {
     return { data: task };
   }
 
-  private async resolveKeyInfo(userId: string, projectId: string, capability: string, modelId: string) {
-    const allKeys = await this.prisma.userApiKey.findMany({
+  private async findKeyId(userId: string, modelId: string): Promise<string> {
+    const key = await this.prisma.userApiKey.findFirst({
       where: { userId, modelId, status: 'valid' },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
-
-    const key = allKeys[0];
     if (!key) throw new NotFoundException(`未找到模型 ${modelId} 的有效 API Key`);
+    return key.id;
+  }
 
-    const apiKey = await this.modelsService.getDecryptedApiKey(userId, key.id);
-    return { apiKey, apiKeyId: key.id };
+  private async verifyProjectAccess(userId: string, projectId: string) {
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, userId } });
+    if (!project) throw new NotFoundException('项目不存在');
   }
 }
