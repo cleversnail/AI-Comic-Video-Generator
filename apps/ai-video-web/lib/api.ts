@@ -106,9 +106,63 @@ export interface VariantType {
   label: string;
   category: string;
 }
+
+// ==================== Storyboard Types ====================
 export interface Storyboard { id: string; projectId: string; shots: Shot[]; }
-export interface Shot { id: string; sequence: number; prompt: string; imageUrl?: string; videoUrl?: string; audioUrl?: string; duration?: number; status: "pending"|"generating"|"completed"|"failed"; cameraAngle?: string; shotType?: string; }
+
+export interface Shot {
+  id: string;
+  sequence: number;
+  prompt: string;
+  negativePrompt?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  audioUrl?: string;
+  duration?: number;
+  status: "pending"|"generating"|"completed"|"failed"|"draft"|"previewed";
+  cameraAngle?: string;
+  shotType?: string;
+  characterIds?: string[];
+  characters?: string[];
+  params?: {
+    title?: string;
+    description?: string;
+    characters?: string[];
+    characterIds?: string[];
+    scene?: string;
+    emotion?: string;
+    dialogue?: string;
+    narration?: string;
+    subtitle?: string;
+    camera?: {
+      shotSize?: string;
+      angle?: string;
+      movement?: string;
+      lighting?: string;
+      mood?: string;
+    };
+    [key: string]: any;
+  };
+}
 export interface ShotPreview extends Shot { characterPrompt?: string; scenePrompt?: string; stylePrompt?: string; }
+
+// ==================== Update Shot DTO ====================
+export interface UpdateShotDto {
+  prompt?: string;
+  negativePrompt?: string;
+  duration?: number;
+  characterIds?: string[];
+  shotType?: string;
+  cameraAngle?: string;
+  cameraMovement?: string;
+  emotion?: string;
+  lighting?: string;
+  dialogue?: string;
+  narration?: string;
+  subtitle?: string;
+  title?: string;
+  description?: string;
+}
 
 // ==================== Auth API ====================
 
@@ -196,9 +250,17 @@ export const charactersApi = {
 
 export const storyboardApi = {
   getStoryboard: (projectId: string) => api.get<Storyboard>(`/projects/${projectId}/storyboard`).then((r) => r.data),
-  generate: (projectId: string, data: { prompt: string }) => api.post<Storyboard>(`/projects/${projectId}/storyboard/generate`, data).then((r) => r.data),
-  previewShot: (projectId: string, shotId: string) => api.post<ShotPreview>(`/projects/${projectId}/storyboard/shots/${shotId}/preview`).then((r) => r.data),
-  deleteShot: (projectId: string, shotId: string) => api.delete(`/projects/${projectId}/storyboard/shots/${shotId}`).then((r) => r.data),
+  generate: (projectId: string, data: { prompt: string; characterIds?: string[] }) =>
+    api.post<Storyboard>(`/projects/${projectId}/storyboard/generate`, {
+      story: data.prompt,
+      characterIds: data.characterIds,
+    }).then((r) => r.data),
+  previewShot: (projectId: string, shotId: string, customPrompt?: string) =>
+    api.post<ShotPreview>(`/projects/${projectId}/storyboard/shots/${shotId}/preview`, { customPrompt }).then((r) => r.data),
+  updateShot: (projectId: string, shotId: string, data: UpdateShotDto) =>
+    api.patch<Shot>(`/projects/${projectId}/storyboard/shots/${shotId}`, data).then((r) => r.data),
+  deleteShot: (projectId: string, shotId: string) =>
+    api.delete(`/projects/${projectId}/storyboard/shots/${shotId}`).then((r) => r.data),
 };
 
 // ==================== Generations API ====================

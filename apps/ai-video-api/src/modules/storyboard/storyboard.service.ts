@@ -4,6 +4,7 @@ import { ModelsService } from '../models/models.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
 import { GenerateShotsDto } from './dto/generate-shots.dto';
 import { GeneratePreviewDto } from './dto/generate-preview.dto';
+import { UpdateShotDto } from './dto/update-shot.dto';
 
 @Injectable()
 export class StoryboardService {
@@ -38,9 +39,12 @@ export class StoryboardService {
     // 解析 API Key 和模型
     const { apiKey, modelId, baseUrl } = await this.modelsService.resolveApiKey(userId, projectId, 'llm');
 
+    // 获取项目中的角色信息（如果提供了 characterIds）
+    const characters = await this.getCharactersForGeneration(userId, projectId, dto.characterIds);
+
     // 构建 LLM 调用提示词
     const systemPrompt = this.buildSystemPrompt(dto.style);
-    const userPrompt = this.buildUserPrompt(dto.story, dto.characterDescriptions);
+    const userPrompt = this.buildUserPrompt(dto.story, characters);
 
     // 调用 LLM 生成分镜
     let shotsData: any[];
@@ -49,7 +53,7 @@ export class StoryboardService {
       const { AdapterFactory } = await import('../../common/adapters/adapter.factory');
       // 我们直接使用 ModelsService 中已注册的 adapter
       const result = await this.callLLM(modelId, apiKey, baseUrl, systemPrompt, userPrompt);
-      
+
       // 解析 LLM 返回的 JSON
       shotsData = this.parseShotsResult(result.content);
     } catch (error: any) {
@@ -63,8 +67,11 @@ export class StoryboardService {
     // 写入新分镜
     const storyboard = await this.getOrCreateStoryboard(projectId);
     const shots = await Promise.all(
-      shotsData.map(async (shot, index) =>
-        this.prisma.shot.create({
+      shotsData.map(async (shot, index) => {
+        // 尝试将 LLM 返回的角色名匹配到项目中的角色 ID
+        const shotCharacterIds = this.matchCharactersToShot(shot.characters || [], characters);
+
+        return this.prisma.shot.create({
           data: {
             projectId,
             storyboardId: storyboard.id,
@@ -76,6 +83,7 @@ export class StoryboardService {
               description: shot.description || '',
               title: shot.title || `分镜 ${index + 1}`,
               characters: shot.characters || [],
+              characterIds: shotCharacterIds,
               scene: shot.scene || '',
               emotion: shot.emotion || '',
               dialogue: shot.dialogue || '',
@@ -85,11 +93,79 @@ export class StoryboardService {
             },
             status: 'draft',
           },
-        })
-      )
+        });
+      })
     );
 
     return { data: shots };
+  }
+
+  /**
+   * 获取用于分镜生成的角色信息
+   */
+  private async getCharactersForGeneration(
+    userId: string,
+    projectId: string,
+    characterIds?: string[],
+  ): Promise<Array<{ id: string; name: string; description: string; lockLevel: string }>> {
+    await this.verifyProjectAccess(userId, projectId);
+
+    let where: any = { projectId };
+    if (characterIds && characterIds.length > 0) {
+      where = { projectId, id: { in: characterIds } };
+    }
+
+    const characters = await this.prisma.character.findMany({ where });
+
+    return characters.map((c) => ({
+      id: c.id,
+      name: c.name,
+      description: this.buildCharacterDescription(c),
+      lockLevel: c.lockLevel || 'medium',
+    }));
+  }
+
+  /**
+   * 构建角色描述文本（用于注入到分镜生成提示词中）
+   */
+  private buildCharacterDescription(character: any): string {
+    const parts: string[] = [];
+    parts.push(`姓名：${character.name}`);
+    if (character.gender) parts.push(`性别：${character.gender}`);
+    if (character.age) parts.push(`年龄：${character.age}`);
+    if (character.appearance) parts.push(`外貌：${character.appearance}`);
+    if (character.outfit) parts.push(`服装：${character.outfit}`);
+    if (character.personality) parts.push(`性格：${character.personality}`);
+    if (character.lockLevel) parts.push(`一致性要求：${this.getLockLevelLabel(character.lockLevel)}`);
+    return parts.join('，');
+  }
+
+  private getLockLevelLabel(lockLevel: string): string {
+    const map: Record<string, string> = {
+      loose: '宽松（允许较大变化）',
+      medium: '中等（保持基本特征）',
+      strict: '严格（高度一致）',
+    };
+    return map[lockLevel] || lockLevel;
+  }
+
+  /**
+   * 将 LLM 返回的角色名匹配到项目中的角色 ID
+   */
+  private matchCharactersToShot(
+    shotCharacterNames: string[],
+    characters: Array<{ id: string; name: string }>,
+  ): string[] {
+    const matchedIds: string[] = [];
+    for (const name of shotCharacterNames) {
+      const matched = characters.find(
+        (c) => c.name === name || name.includes(c.name) || c.name.includes(name),
+      );
+      if (matched && !matchedIds.includes(matched.id)) {
+        matchedIds.push(matched.id);
+      }
+    }
+    return matchedIds;
   }
 
   private async getOrCreateStoryboard(projectId: string) {
@@ -167,15 +243,15 @@ ${style ? `5. 画面风格：${style}` : ''}
 ]`;
   }
 
-  private buildUserPrompt(story: string, characterDescriptions?: string[]): string {
+  private buildUserPrompt(story: string, characters?: Array<{ name: string; description: string; lockLevel: string }>): string {
     let prompt = `请将以下故事拆分为 4-8 个分镜：\n\n${story}`;
-    
-    if (characterDescriptions && characterDescriptions.length > 0) {
-      prompt += `\n\n角色信息：\n${characterDescriptions.map((c, i) => `${i + 1}. ${c}`).join('\n')}`;
+
+    if (characters && characters.length > 0) {
+      prompt += `\n\n项目中的角色信息（请确保分镜中的角色与以下描述一致，并在每个分镜的 characters 字段中填写角色名）：\n${characters.map((c, i) => `${i + 1}. ${c.name} - ${c.description}`).join('\n')}`;
     }
 
     prompt += '\n\n请返回纯 JSON 数组，不要有任何额外文字。';
-    
+
     return prompt;
   }
 
@@ -211,6 +287,51 @@ ${style ? `5. 画面风格：${style}` : ''}
     return { success: true };
   }
 
+  async updateShot(projectId: string, shotId: string, dto: UpdateShotDto) {
+    const shot = await this.prisma.shot.findFirst({
+      where: { id: shotId, projectId },
+    });
+    if (!shot) throw new NotFoundException('Shot not found');
+
+    const params = (shot.params as any) || {};
+    const mergedParams: any = { ...params };
+
+    if (dto.characterIds !== undefined) {
+      mergedParams.characterIds = dto.characterIds;
+      // 同步更新 characters 名称列表（用于前端展示和 LLM 再生成）
+      if (dto.characterIds.length > 0) {
+        const characters = await this.prisma.character.findMany({
+          where: { projectId, id: { in: dto.characterIds } },
+        });
+        mergedParams.characters = characters.map((c) => c.name);
+      } else {
+        mergedParams.characters = [];
+      }
+    }
+    if (dto.shotType !== undefined) mergedParams.shotType = dto.shotType;
+    if (dto.cameraAngle !== undefined) mergedParams.cameraAngle = dto.cameraAngle;
+    if (dto.cameraMovement !== undefined) mergedParams.cameraMovement = dto.cameraMovement;
+    if (dto.emotion !== undefined) mergedParams.emotion = dto.emotion;
+    if (dto.lighting !== undefined) mergedParams.lighting = dto.lighting;
+    if (dto.dialogue !== undefined) mergedParams.dialogue = dto.dialogue;
+    if (dto.narration !== undefined) mergedParams.narration = dto.narration;
+    if (dto.subtitle !== undefined) mergedParams.subtitle = dto.subtitle;
+    if (dto.title !== undefined) mergedParams.title = dto.title;
+    if (dto.description !== undefined) mergedParams.description = dto.description;
+    if (dto.cameraMovement !== undefined) mergedParams.cameraMovement = dto.cameraMovement;
+
+    const updateData: any = { params: mergedParams };
+    if (dto.prompt !== undefined) updateData.prompt = dto.prompt;
+    if (dto.negativePrompt !== undefined) updateData.negativePrompt = dto.negativePrompt;
+    if (dto.duration !== undefined) updateData.duration = dto.duration;
+
+    const updated = await this.prisma.shot.update({
+      where: { id: shotId },
+      data: updateData,
+    });
+
+    return { data: updated };
+  }
   async generatePreview(userId: string, projectId: string, shotId: string, dto: GeneratePreviewDto) {
 
     const shot = await this.prisma.shot.findFirst({
@@ -224,7 +345,7 @@ ${style ? `5. 画面风格：${style}` : ''}
     // 解析图像生成模型的 API Key
     const { apiKey, modelId, baseUrl } = await this.modelsService.resolveApiKey(userId, projectId, 'image');
 
-    // 获取分镜参数
+    // 获取分镜参数和绑定角色
     const params = shot.params as any;
     const prompt = dto.customPrompt || shot.prompt || params?.description || '';
 
@@ -232,19 +353,23 @@ ${style ? `5. 画面风格：${style}` : ''}
       throw new BadRequestException('该分镜没有提示词，无法生成预览');
     }
 
+    // 根据绑定的角色 ID 获取角色信息，并注入到提示词中
+    const characterPrompt = await this.buildCharacterPromptForShot(userId, projectId, params?.characterIds || []);
+    const finalPrompt = characterPrompt ? `${prompt}, ${characterPrompt}` : prompt;
+
     // 根据项目比例确定图片尺寸
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     const aspectRatio = project?.aspectRatio || '9:16';
     const dimensions = this.getDimensionsByAspectRatio(aspectRatio);
 
-    this.logger.log(`Generating preview for shot ${shotId} using ${modelId}, prompt: ${prompt.substring(0, 80)}...`);
+    this.logger.log(`Generating preview for shot ${shotId} using ${modelId}, prompt: ${finalPrompt.substring(0, 80)}...`);
 
     let imageUrl: string;
     try {
       const imageAdapter = this.adapterFactory.getImageAdapter(modelId);
       const result = await imageAdapter.generateImage(
         {
-          prompt,
+          prompt: finalPrompt,
           width: dimensions.width,
           height: dimensions.height,
         },
@@ -274,6 +399,66 @@ ${style ? `5. 画面风格：${style}` : ''}
         status: 'previewed',
       },
     };
+  }
+
+  /**
+   * 为分镜构建角色一致性提示词
+   */
+  private async buildCharacterPromptForShot(
+    userId: string,
+    projectId: string,
+    characterIds: string[],
+  ): Promise<string> {
+    if (!characterIds || characterIds.length === 0) return '';
+
+    const characters = await this.prisma.character.findMany({
+      where: {
+        projectId,
+        id: { in: characterIds },
+      },
+    });
+
+    if (characters.length === 0) return '';
+
+    const prompts: string[] = [];
+    for (const character of characters) {
+      const parts: string[] = [];
+      parts.push(`same character as ${character.name}`);
+      if (character.appearance) parts.push(character.appearance);
+      if (character.outfit) parts.push(`wearing ${character.outfit}`);
+
+      // 根据锁定强度追加一致性约束
+      const lockLevel = character.lockLevel || 'medium';
+      if (lockLevel === 'strict') {
+        parts.push('highly consistent appearance, identical character design, same face and outfit');
+      } else if (lockLevel === 'medium') {
+        parts.push('consistent character design, same face and outfit style');
+      } else {
+        parts.push('similar character style');
+      }
+
+      // 如果有主图或四视图，提示使用参考
+      if (character.mainImage) {
+        parts.push('refer to main reference image');
+      }
+      if (character.viewImages) {
+        const viewCount = Object.values(character.viewImages).filter(Boolean).length;
+        if (viewCount > 0) {
+          parts.push(`refer to ${viewCount}-view character sheet for consistency`);
+        }
+      }
+
+      prompts.push(parts.join(', '));
+    }
+
+    return 'featuring ' + prompts.join('; and ');
+  }
+
+  private async verifyProjectAccess(userId: string, projectId: string) {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, userId },
+    });
+    if (!project) throw new NotFoundException('项目不存在');
   }
 
   private getDimensionsByAspectRatio(ratio: string): { width: number; height: number } {

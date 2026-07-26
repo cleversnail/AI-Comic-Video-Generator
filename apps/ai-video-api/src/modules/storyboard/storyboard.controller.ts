@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Param, Get, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Post, Patch, Body, Param, Get, Delete, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { StoryboardService } from './storyboard.service';
 import { GenerateShotsDto } from './dto/generate-shots.dto';
 import { GeneratePreviewDto } from './dto/generate-preview.dto';
+import { UpdateShotDto } from './dto/update-shot.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 
@@ -47,5 +48,15 @@ export class StoryboardController {
     @Param('shotId') shotId: string,
   ) {
     return this.storyboardService.deleteShot(projectId, shotId);
+  }
+
+  @Patch('shots/:shotId')
+  @ApiOperation({ summary: '更新分镜参数（角色绑定、景别、角度、情绪等）' })
+  async updateShot(
+    @Param('projectId') projectId: string,
+    @Param('shotId') shotId: string,
+    @Body() dto: UpdateShotDto,
+  ) {
+    return this.storyboardService.updateShot(projectId, shotId, dto);
   }
 }
