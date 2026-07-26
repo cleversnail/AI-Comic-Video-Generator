@@ -50,9 +50,6 @@ export class StoryboardService {
     // 调用 LLM 生成分镜
     let shotsData: any[];
     try {
-      // 通过 AdapterFactory 获取 LLM Adapter
-      const { AdapterFactory } = await import('../../common/adapters/adapter.factory');
-      // 我们直接使用 ModelsService 中已注册的 adapter
       const result = await this.callLLM(modelId, apiKey, baseUrl, systemPrompt, userPrompt);
 
       // 解析 LLM 返回的 JSON

@@ -112,9 +112,14 @@ export function ShotDetailPanel({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    onUpdate(form);
-  };
+  // Auto-save with debounce
+  useEffect(() => {
+    if (!hasChanges) return;
+    const timer = setTimeout(() => {
+      onUpdate(form);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [form]);
 
   const hasChanges = JSON.stringify(form) !== JSON.stringify({
     title: params.title || `分镜 ${shot.sequence}`,
@@ -325,9 +330,7 @@ export function ShotDetailPanel({
             {isGeneratingPreview ? "生成中..." : "生成预览"}
           </Button>
           {hasChanges && (
-            <Button size="sm" className="w-full" onClick={handleSave}>
-              保存修改
-            </Button>
+            <p className="text-[10px] text-anime-purple text-center">自动保存中...</p>
           )}
           <Button size="sm" variant="secondary" className="w-full text-warm-orange" onClick={onDelete}>
             删除分镜

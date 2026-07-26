@@ -12,10 +12,8 @@ interface StoryboardReaderProps {
 
 export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   const sortedShots = [...shots].sort((a, b) => a.sequence - b.sequence);
   const currentShot = sortedShots[currentIndex];
@@ -209,7 +207,6 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
               {hasAudio && (
                 <div className="mt-4">
                   <audio
-                    ref={audioRef}
                     controls
                     className="w-full"
                     src={(params as any).audioUrl}

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,11 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
   const [speed, setSpeed] = useState(1.0);
   const [results, setResults] = useState<Array<{ shotId: string; status: string; audioUrl?: string }>>([]);
 
+  // Clear results when shots update
+  useEffect(() => {
+    setResults([]);
+  }, [shots]);
+
   const shotsWithText = shots.filter((shot) => {
     const params = shot.params || {};
     return params.dialogue || params.narration || params.subtitle;
@@ -43,6 +48,9 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       setResults(data.results || []);
     },
+    onError: (error: any) => {
+      alert(`批量配音失败：${error.message || '请检查 TTS API Key 配置'}`);
+    },
   });
 
   const singleMutation = useMutation({
@@ -52,6 +60,9 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
+    },
+    onError: (error: any) => {
+      alert(`配音生成失败：${error.message || '请检查 TTS API Key 配置'}`);
     },
   });
 
