@@ -159,80 +159,83 @@ export class VersionService {
     // Create a snapshot of current state before restoring
     await this.createSnapshot(userId, projectId, `恢复前自动快照`);
 
-    // Restore project info
-    if (snapshot.project) {
-      await this.prisma.project.update({
-        where: { id: projectId },
-        data: {
-          name: snapshot.project.name,
-          description: snapshot.project.description,
-          style: snapshot.project.style,
-          aspectRatio: snapshot.project.aspectRatio,
-          status: snapshot.project.status,
-        },
-      });
-    }
-
-    // Delete current characters and restore from snapshot
-    await this.prisma.character.deleteMany({ where: { projectId } });
-    if (snapshot.characters) {
-      for (const char of snapshot.characters) {
-        await this.prisma.character.create({
+    // Use transaction to ensure atomicity
+    await this.prisma.$transaction(async (tx) => {
+      // Restore project info
+      if (snapshot.project) {
+        await tx.project.update({
+          where: { id: projectId },
           data: {
-            projectId,
-            name: char.name,
-            gender: char.gender,
-            age: char.age,
-            role: char.role,
-            personality: char.personality,
-            appearance: char.appearance,
-            outfit: char.outfit,
-            mainImage: char.mainImage,
-            viewImages: char.viewImages,
-            variants: char.variants,
-            lockLevel: char.lockLevel,
+            name: snapshot.project.name,
+            description: snapshot.project.description,
+            style: snapshot.project.style,
+            aspectRatio: snapshot.project.aspectRatio,
+            status: snapshot.project.status,
           },
         });
       }
-    }
 
-    // Delete current storyboards and shots, restore from snapshot
-    await this.prisma.shot.deleteMany({ where: { projectId } });
-    await this.prisma.storyboard.deleteMany({ where: { projectId } });
-    if (snapshot.storyboards) {
-      for (const sb of snapshot.storyboards) {
-        const newStoryboard = await this.prisma.storyboard.create({
-          data: {
-            projectId,
-            sequence: sb.sequence,
-            description: sb.description,
-            scene: sb.scene,
-            emotion: sb.emotion,
-            duration: sb.duration,
-          },
-        });
+      // Delete current characters and restore from snapshot
+      await tx.character.deleteMany({ where: { projectId } });
+      if (snapshot.characters) {
+        for (const char of snapshot.characters) {
+          await tx.character.create({
+            data: {
+              projectId,
+              name: char.name,
+              gender: char.gender,
+              age: char.age,
+              role: char.role,
+              personality: char.personality,
+              appearance: char.appearance,
+              outfit: char.outfit,
+              mainImage: char.mainImage,
+              viewImages: char.viewImages,
+              variants: char.variants,
+              lockLevel: char.lockLevel,
+            },
+          });
+        }
+      }
 
-        if (sb.shots) {
-          for (const shot of sb.shots) {
-            await this.prisma.shot.create({
-              data: {
-                projectId,
-                storyboardId: newStoryboard.id,
-                sequence: shot.sequence,
-                prompt: shot.prompt,
-                negativePrompt: shot.negativePrompt,
-                params: shot.params,
-                status: shot.status,
-                resultUrl: shot.resultUrl,
-                firstFrameUrl: shot.firstFrameUrl,
-                lastFrameUrl: shot.lastFrameUrl,
-                duration: shot.duration,
-              },
-            });
+      // Delete current storyboards and shots, restore from snapshot
+      await tx.shot.deleteMany({ where: { projectId } });
+      await tx.storyboard.deleteMany({ where: { projectId } });
+      if (snapshot.storyboards) {
+        for (const sb of snapshot.storyboards) {
+          const newStoryboard = await tx.storyboard.create({
+            data: {
+              projectId,
+              sequence: sb.sequence,
+              description: sb.description,
+              scene: sb.scene,
+              emotion: sb.emotion,
+              duration: sb.duration,
+            },
+          });
+
+          if (sb.shots) {
+            for (const shot of sb.shots) {
+              await tx.shot.create({
+                data: {
+                  projectId,
+                  storyboardId: newStoryboard.id,
+                  sequence: shot.sequence,
+                  prompt: shot.prompt,
+                  negativePrompt: shot.negativePrompt,
+                  params: shot.params,
+                  status: shot.status,
+                  resultUrl: shot.resultUrl,
+                  firstFrameUrl: shot.firstFrameUrl,
+                  lastFrameUrl: shot.lastFrameUrl,
+                  duration: shot.duration,
+                },
+              });
+            }
           }
         }
       }
-    }
+    });
 
     this.logger.log(`Version restored: project=${projectId}, version=${version.version}`);
 
