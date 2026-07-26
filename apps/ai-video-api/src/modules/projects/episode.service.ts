@@ -121,14 +121,17 @@ export class EpisodeService {
     });
     if (!episode) throw new NotFoundException('剧集不存在');
 
-    // Delete associated storyboards and shots
-    await this.prisma.shot.deleteMany({
-      where: { storyboard: { episodeId } },
+    // Use transaction to ensure atomicity
+    await this.prisma.$transaction(async (tx) => {
+      // Delete associated storyboards and shots
+      await tx.shot.deleteMany({
+        where: { storyboard: { episodeId } },
+      });
+      await tx.storyboard.deleteMany({
+        where: { episodeId },
+      });
+      await tx.episode.delete({ where: { id: episodeId } });
     });
-    await this.prisma.storyboard.deleteMany({
-      where: { episodeId },
-    });
-    await this.prisma.episode.delete({ where: { id: episodeId } });
 
     return { success: true };
   }
