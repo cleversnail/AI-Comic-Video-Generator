@@ -16,6 +16,7 @@ import { ShotDetailPanel } from "@/components/storyboard/shot-detail-panel";
 import { TtsPanel } from "@/components/storyboard/tts-panel";
 import { StoryboardReader } from "@/components/storyboard/storyboard-reader";
 import { AssistantChat } from "@/components/assistant/assistant-chat";
+import { VersionHistory } from "@/components/version/version-history";
 
 const tabs = [
   { id: "characters", label: "角色" },
@@ -33,6 +34,7 @@ export default function StudioPage() {
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
   const [showReader, setShowReader] = useState(false);
+  const [showVersions, setShowVersions] = useState(false);
 
   const { data: project } = useQuery({
     queryKey: ["project", projectId],
@@ -89,6 +91,10 @@ export default function StudioPage() {
           )}
         </div>
         <div className="flex gap-3">
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowVersions(true)}>
+            <ClockIcon className="w-4 h-4" />
+            版本
+          </Button>
           {shots.length > 0 && (
             <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowReader(true)}>
               <BookIcon className="w-4 h-4" />
@@ -202,6 +208,13 @@ export default function StudioPage() {
         <StoryboardReader shots={shots} onClose={() => setShowReader(false)} />
       )}
 
+      {/* Version History */}
+      <VersionHistory
+        projectId={projectId}
+        isOpen={showVersions}
+        onClose={() => setShowVersions(false)}
+      />
+
       {/* AI Assistant */}
       <AssistantChat projectId={projectId} projectName={project?.name} />
     </div>
@@ -265,6 +278,15 @@ function BookIcon({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
       <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </svg>
+  );
+}
+
+function ClockIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
     </svg>
   );
 }

@@ -234,11 +234,29 @@ export const modelsApi = {
 
 // ==================== Projects API ====================
 
+export interface ProjectVersion {
+  id: string;
+  version: number;
+  label: string;
+  createdAt: string;
+}
+
 export const projectsApi = {
   listProjects: () => api.get<any>("/projects").then((r) => r.data.data),
   getProject: (id: string) => api.get<Project>(`/projects/${id}`).then((r) => r.data),
   createProject: (data: CreateProjectDto) => api.post<Project>("/projects", data).then((r) => r.data),
   deleteProject: (id: string) => api.delete(`/projects/${id}`).then((r) => r.data),
+  // Version APIs
+  createVersion: (id: string, label?: string) =>
+    api.post<{ data: ProjectVersion }>(`/projects/${id}/versions`, { label }).then((r) => r.data.data),
+  listVersions: (id: string) =>
+    api.get<{ data: ProjectVersion[] }>(`/projects/${id}/versions`).then((r) => r.data.data),
+  getVersion: (id: string, versionId: string) =>
+    api.get<{ data: ProjectVersion & { snapshot: any } }>(`/projects/${id}/versions/${versionId}`).then((r) => r.data.data),
+  restoreVersion: (id: string, versionId: string) =>
+    api.post<{ data: { restoredVersion: number; label: string } }>(`/projects/${id}/versions/${versionId}/restore`).then((r) => r.data.data),
+  deleteVersion: (id: string, versionId: string) =>
+    api.delete(`/projects/${id}/versions/${versionId}`).then((r) => r.data),
 };
 
 // ==================== Characters API ====================
