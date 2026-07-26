@@ -1,6 +1,8 @@
 import { Controller, Post, Patch, Body, Param, Get, Delete, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { StoryboardService } from './storyboard.service';
+import { StoryboardPreviewService } from './storyboard-preview.service';
+import { StoryboardTtsService } from './storyboard-tts.service';
 import { GenerateShotsDto } from './dto/generate-shots.dto';
 import { GeneratePreviewDto } from './dto/generate-preview.dto';
 import { UpdateShotDto } from './dto/update-shot.dto';
@@ -13,7 +15,11 @@ import { CurrentUser } from '../auth/current-user.decorator';
 @UseGuards(JwtAuthGuard)
 @Controller('projects/:projectId/storyboard')
 export class StoryboardController {
-  constructor(private readonly storyboardService: StoryboardService) {}
+  constructor(
+    private readonly storyboardService: StoryboardService,
+    private readonly previewService: StoryboardPreviewService,
+    private readonly ttsService: StoryboardTtsService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: '获取项目的分镜列表' })
@@ -42,7 +48,7 @@ export class StoryboardController {
     @Param('shotId') shotId: string,
     @Body() dto: GeneratePreviewDto,
   ) {
-    return this.storyboardService.generatePreview(userId, projectId, shotId, dto);
+    return this.previewService.generatePreview(userId, projectId, shotId, dto);
   }
 
   @Delete('shots/:shotId')
@@ -74,7 +80,7 @@ export class StoryboardController {
     @Param('shotId') shotId: string,
     @Body() dto: GenerateTtsDto,
   ) {
-    return this.storyboardService.generateTtsForShot(userId, projectId, shotId, dto.voiceId, dto.speed);
+    return this.ttsService.generateTtsForShot(userId, projectId, shotId, dto.voiceId, dto.speed);
   }
 
   @Post('tts/batch')
@@ -84,6 +90,6 @@ export class StoryboardController {
     @Param('projectId') projectId: string,
     @Body() dto: GenerateTtsForShotsDto,
   ) {
-    return this.storyboardService.generateTtsForShots(userId, projectId, dto.shotIds, dto.voiceId, dto.speed);
+    return this.ttsService.generateTtsForShots(userId, projectId, dto.shotIds, dto.voiceId, dto.speed);
   }
 }
