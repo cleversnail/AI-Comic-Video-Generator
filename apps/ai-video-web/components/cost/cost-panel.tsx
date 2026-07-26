@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { modelsApi, CostSummary } from "@/lib/api";
+import { modelsApi } from "@/lib/api";
 
 const capabilityLabels: Record<string, string> = {
   llm: "大语言模型",

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface CostRecord {
@@ -85,10 +85,15 @@ export class CostService {
    * 获取项目成本统计
    */
   async getProjectCostSummary(userId: string, projectId: string) {
+    // Verify project access
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, userId },
+    });
+    if (!project) throw new NotFoundException('项目不存在');
+
     // Get generation tasks for this project
     const tasks = await this.prisma.generationTask.findMany({
       where: { projectId },
-      include: { project: true },
     });
 
     const byCapability: Record<string, { count: number; cost: number }> = {};
@@ -122,12 +127,18 @@ export class CostService {
   }
 
   private estimateTaskCost(task: any): number {
-    // Simple cost estimation based on capability
+    // Use model billing rule if available, otherwise fallback to defaults
+    const billingRule = task.parameters?.billingRule;
+    if (billingRule?.unitPrice) {
+      return billingRule.unitPrice;
+    }
+
+    // Default cost estimation based on capability (in CNY)
     switch (task.capability) {
-      case 'llm': return 0.01;  // ~$0.01 per LLM call
-      case 'image': return 0.02; // ~$0.02 per image
-      case 'video': return 0.10; // ~$0.10 per video
-      case 'tts': return 0.005;  // ~$0.005 per TTS
+      case 'llm': return 0.07;   // ~¥0.07 per LLM call
+      case 'image': return 0.15;  // ~¥0.15 per image
+      case 'video': return 0.70;  // ~¥0.70 per video
+      case 'tts': return 0.03;   // ~¥0.03 per TTS
       default: return 0;
     }
   }
