@@ -15,6 +15,7 @@ import { ShotCharacterBinding } from "@/components/storyboard/shot-character-bin
 import { ShotDetailPanel } from "@/components/storyboard/shot-detail-panel";
 import { TtsPanel } from "@/components/storyboard/tts-panel";
 import { StoryboardReader } from "@/components/storyboard/storyboard-reader";
+import { AssistantChat } from "@/components/assistant/assistant-chat";
 
 const tabs = [
   { id: "characters", label: "角色" },
@@ -200,6 +201,9 @@ export default function StudioPage() {
       {showReader && shots.length > 0 && (
         <StoryboardReader shots={shots} onClose={() => setShowReader(false)} />
       )}
+
+      {/* AI Assistant */}
+      <AssistantChat projectId={projectId} projectName={project?.name} />
     </div>
   );
 }

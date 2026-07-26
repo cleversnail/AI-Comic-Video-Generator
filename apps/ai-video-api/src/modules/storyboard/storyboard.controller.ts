@@ -7,8 +7,12 @@ import { GenerateShotsDto } from './dto/generate-shots.dto';
 import { GeneratePreviewDto } from './dto/generate-preview.dto';
 import { UpdateShotDto } from './dto/update-shot.dto';
 import { GenerateTtsDto, GenerateTtsForShotsDto } from './dto/generate-tts.dto';
+import { AssistantChatDto } from './dto/assistant-chat.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { ModelsService } from '../models/models.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { AdapterFactory } from '../../common/adapters/adapter.factory';
 
 @ApiTags('分镜')
 @ApiBearerAuth()
@@ -19,6 +23,9 @@ export class StoryboardController {
     private readonly storyboardService: StoryboardService,
     private readonly previewService: StoryboardPreviewService,
     private readonly ttsService: StoryboardTtsService,
+    private readonly modelsService: ModelsService,
+    private readonly prisma: PrismaService,
+    private readonly adapterFactory: AdapterFactory,
   ) {}
 
   @Get()
@@ -62,7 +69,7 @@ export class StoryboardController {
   }
 
   @Patch('shots/:shotId')
-  @ApiOperation({ summary: '更新分镜参数（角色绑定、景别、角度、情绪等）' })
+  @ApiOperation({ summary: '更新分镜参数' })
   async updateShot(
     @CurrentUser('id') userId: string,
     @Param('projectId') projectId: string,
@@ -91,5 +98,62 @@ export class StoryboardController {
     @Body() dto: GenerateTtsForShotsDto,
   ) {
     return this.ttsService.generateTtsForShots(userId, projectId, dto.shotIds, dto.voiceId, dto.speed);
+  }
+
+  @Post('assistant')
+  @ApiOperation({ summary: '创作助手 AI 对话' })
+  async assistantChat(
+    @CurrentUser('id') userId: string,
+    @Param('projectId') projectId: string,
+    @Body() dto: AssistantChatDto,
+  ) {
+    // Verify project access
+    const project = await this.prisma.project.findFirst({ where: { id: projectId, userId } });
+    if (!project) throw new Error('项目不存在');
+
+    // Get project context
+    const characters = await this.prisma.character.findMany({ where: { projectId } });
+    const shots = await this.prisma.shot.findMany({ where: { projectId }, orderBy: { sequence: 'asc' } });
+
+    const contextParts: string[] = [];
+    contextParts.push(`项目名称：${project.name}`);
+    if (project.style) contextParts.push(`风格：${project.style}`);
+    if (characters.length > 0) {
+      contextParts.push(`角色：${characters.map(c => c.name).join('、')}`);
+    }
+    if (shots.length > 0) {
+      contextParts.push(`已有 ${shots.length} 个分镜`);
+    }
+
+    const systemPrompt = `你是一个专业的漫剧创作助手。你正在帮助用户创作名为「${project.name}」的漫剧项目。
+
+项目上下文：
+${contextParts.join('\n')}
+
+你的能力：
+1. 帮助用户优化故事剧情和台词
+2. 提供分镜建议和镜头语言指导
+3. 帮助优化角色描述和提示词
+4. 回答关于漫剧创作的问题
+5. 提供创意灵感和剧情建议
+
+请用简洁、专业的语气回答，必要时给出具体的建议和示例。`;
+
+    // Get LLM API key
+    const { apiKey, modelId, baseUrl } = await this.modelsService.resolveApiKey(userId, projectId, 'llm');
+    const llmAdapter = this.adapterFactory.getLLMAdapter(modelId);
+
+    const messages = [
+      { role: 'system' as const, content: systemPrompt },
+      ...(dto.history || []),
+      { role: 'user' as const, content: dto.message },
+    ];
+
+    const result = await llmAdapter.generateText(
+      { messages, temperature: 0.7, maxTokens: 2000 },
+      { apiKey, baseUrl }
+    );
+
+    return { data: { reply: result.content } };
   }
 }
