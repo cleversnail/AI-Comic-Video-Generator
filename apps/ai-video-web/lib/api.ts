@@ -241,6 +241,17 @@ export interface ProjectVersion {
   createdAt: string;
 }
 
+export interface Episode {
+  id: string;
+  number: number;
+  title: string;
+  description?: string;
+  status: string;
+  storyboardCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const projectsApi = {
   listProjects: () => api.get<any>("/projects").then((r) => r.data.data),
   getProject: (id: string) => api.get<Project>(`/projects/${id}`).then((r) => r.data),
@@ -257,6 +268,17 @@ export const projectsApi = {
     api.post<{ data: { restoredVersion: number; label: string } }>(`/projects/${id}/versions/${versionId}/restore`).then((r) => r.data.data),
   deleteVersion: (id: string, versionId: string) =>
     api.delete(`/projects/${id}/versions/${versionId}`).then((r) => r.data),
+  // Episode APIs
+  listEpisodes: (id: string) =>
+    api.get<{ data: Episode[] }>(`/projects/${id}/episodes`).then((r) => r.data.data),
+  createEpisode: (id: string, data: { title?: string; description?: string }) =>
+    api.post<{ data: Episode }>(`/projects/${id}/episodes`, data).then((r) => r.data.data),
+  getEpisode: (id: string, episodeId: string) =>
+    api.get<{ data: Episode }>(`/projects/${id}/episodes/${episodeId}`).then((r) => r.data.data),
+  updateEpisode: (id: string, episodeId: string, data: { title?: string; description?: string; status?: string }) =>
+    api.put<{ data: Episode }>(`/projects/${id}/episodes/${episodeId}`, data).then((r) => r.data.data),
+  deleteEpisode: (id: string, episodeId: string) =>
+    api.delete(`/projects/${id}/episodes/${episodeId}`).then((r) => r.data),
 };
 
 // ==================== Characters API ====================
