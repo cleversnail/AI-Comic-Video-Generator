@@ -14,6 +14,7 @@ import { CharacterList } from "@/components/characters/character-list";
 import { ShotCharacterBinding } from "@/components/storyboard/shot-character-binding";
 import { ShotDetailPanel } from "@/components/storyboard/shot-detail-panel";
 import { TtsPanel } from "@/components/storyboard/tts-panel";
+import { StoryboardReader } from "@/components/storyboard/storyboard-reader";
 
 const tabs = [
   { id: "characters", label: "角色" },
@@ -32,6 +33,7 @@ export default function StudioPage() {
   const [prompt, setPrompt] = useState("");
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
   const [selectedShotId, setSelectedShotId] = useState<string|null>(null);
+  const [showReader, setShowReader] = useState(false);
   const { data: project } = useQuery({ queryKey: ["project",projectId], queryFn: ()=>projectsApi.getProject(projectId) });
   const { data: storyboard } = useQuery({ queryKey: ["storyboard",projectId], queryFn: ()=>storyboardApi.getStoryboard(projectId) });
   const generateMutation = useMutation({ mutationFn: (data:{prompt:string; characterIds?: string[]})=>storyboardApi.generate(projectId,data), onSuccess:()=>{ queryClient.invalidateQueries({queryKey:["storyboard",projectId]}); } });
@@ -58,7 +60,7 @@ export default function StudioPage() {
           <h1 className="font-display text-lg font-semibold text-white">{project?.name||"加载中..."}</h1>
           {project?.status&&<Badge variant={project.status==="draft"?"info":"success"} className="ml-2">{project.status==="draft"?"草稿":"进行中"}</Badge>}
         </div>
-        <div className="flex gap-3"><Link href={`/projects/${projectId}/generate`}><Button variant="outline" size="sm" className="gap-2"><WandIcon className="w-4 h-4"/>生成视频</Button></Link><Link href={`/projects/${projectId}/export`}><Button variant="outline" size="sm" className="gap-2"><PlayIcon className="w-4 h-4"/>导出</Button></Link></div>
+        <div className="flex gap-3">{shots.length > 0 && <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowReader(true)}><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>阅读</Button>}<Link href={`/projects/${projectId}/generate`}><Button variant="outline" size="sm" className="gap-2"><WandIcon className="w-4 h-4"/>生成视频</Button></Link><Link href={`/projects/${projectId}/export`}><Button variant="outline" size="sm" className="gap-2"><PlayIcon className="w-4 h-4"/>导出</Button></Link></div>
       </header>
       <div className="flex-1 flex overflow-hidden">
         <nav className="w-48 border-r border-divider bg-panel-deep p-4 space-y-1 flex-shrink-0">
@@ -79,6 +81,11 @@ export default function StudioPage() {
           {activeTab==="timeline"&&(<TtsPanel projectId={projectId} shots={shots} />)}
         </div>
       </div>
+
+      {/* Storyboard Reader Modal */}
+      {showReader && shots.length > 0 && (
+        <StoryboardReader shots={shots} onClose={() => setShowReader(false)} />
+      )}
     </div>
   );
 }
