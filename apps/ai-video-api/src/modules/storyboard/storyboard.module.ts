@@ -3,13 +3,14 @@ import { StoryboardController } from './storyboard.controller';
 import { StoryboardService } from './storyboard.service';
 import { StoryboardPreviewService } from './storyboard-preview.service';
 import { StoryboardTtsService } from './storyboard-tts.service';
+import { ScriptAuditService } from './script-audit.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { ModelsModule } from '../models/models.module';
 
 @Module({
   imports: [PrismaModule, ModelsModule],
   controllers: [StoryboardController],
-  providers: [StoryboardService, StoryboardPreviewService, StoryboardTtsService],
-  exports: [StoryboardService, StoryboardPreviewService, StoryboardTtsService],
+  providers: [StoryboardService, StoryboardPreviewService, StoryboardTtsService, ScriptAuditService],
+  exports: [StoryboardService, StoryboardPreviewService, StoryboardTtsService, ScriptAuditService],
 })
 export class StoryboardModule {}

@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { StoryboardService } from './storyboard.service';
 import { StoryboardPreviewService } from './storyboard-preview.service';
 import { StoryboardTtsService } from './storyboard-tts.service';
+import { ScriptAuditService } from './script-audit.service';
 import { GenerateShotsDto } from './dto/generate-shots.dto';
 import { GeneratePreviewDto } from './dto/generate-preview.dto';
 import { UpdateShotDto } from './dto/update-shot.dto';
@@ -23,6 +24,7 @@ export class StoryboardController {
     private readonly storyboardService: StoryboardService,
     private readonly previewService: StoryboardPreviewService,
     private readonly ttsService: StoryboardTtsService,
+    private readonly scriptAuditService: ScriptAuditService,
     private readonly modelsService: ModelsService,
     private readonly prisma: PrismaService,
     private readonly adapterFactory: AdapterFactory,
@@ -155,5 +157,14 @@ ${contextParts.join('\n')}
     );
 
     return { data: { reply: result.content } };
+  }
+
+  @Post('audit')
+  @ApiOperation({ summary: '审计剧本质量' })
+  async auditScript(
+    @CurrentUser('id') userId: string,
+    @Param('projectId') projectId: string,
+  ) {
+    return this.scriptAuditService.auditProject(userId, projectId);
   }
 }

@@ -312,6 +312,20 @@ export const charactersApi = {
 
 // ==================== Storyboard API ====================
 
+export interface AuditResult {
+  score: number;
+  grade: 'A' | 'B' | 'C' | 'D';
+  summary: string;
+  details: {
+    structure: { score: number; feedback: string };
+    dialogue: { score: number; feedback: string };
+    pacing: { score: number; feedback: string };
+    visual: { score: number; feedback: string };
+    emotion: { score: number; feedback: string };
+  };
+  suggestions: string[];
+}
+
 export const storyboardApi = {
   getStoryboard: (projectId: string) => api.get<Storyboard>(`/projects/${projectId}/storyboard`).then((r) => r.data),
   generate: (projectId: string, data: { prompt: string; characterIds?: string[] }) =>
@@ -333,6 +347,8 @@ export const storyboardApi = {
     api.post<{ data: { total: number; success: number; failed: number; results: Array<{ shotId: string; audioUrl: string; duration: number; status: string }> } }>(
       `/projects/${projectId}/storyboard/tts/batch`, data
     ).then((r) => r.data.data),
+  auditScript: (projectId: string) =>
+    api.post<{ data: AuditResult }>(`/projects/${projectId}/storyboard/audit`).then((r) => r.data.data),
 };
 
 // ==================== Generations API ====================
