@@ -16,7 +16,8 @@ export class StoryboardService {
     private readonly adapterFactory: AdapterFactory,
   ) {}
 
-  async listShots(projectId: string) {
+  async listShots(userId: string, projectId: string) {
+    await this.verifyProjectAccess(userId, projectId);
     const shots = await this.prisma.shot.findMany({
       where: { projectId },
       orderBy: { sequence: 'asc' },
@@ -40,7 +41,7 @@ export class StoryboardService {
     const { apiKey, modelId, baseUrl } = await this.modelsService.resolveApiKey(userId, projectId, 'llm');
 
     // 获取项目中的角色信息（如果提供了 characterIds）
-    const characters = await this.getCharactersForGeneration(userId, projectId, dto.characterIds);
+    const characters = await this.getCharactersForGeneration(projectId, dto.characterIds);
 
     // 构建 LLM 调用提示词
     const systemPrompt = this.buildSystemPrompt(dto.style);
@@ -104,12 +105,9 @@ export class StoryboardService {
    * 获取用于分镜生成的角色信息
    */
   private async getCharactersForGeneration(
-    userId: string,
     projectId: string,
     characterIds?: string[],
   ): Promise<Array<{ id: string; name: string; description: string; lockLevel: string }>> {
-    await this.verifyProjectAccess(userId, projectId);
-
     let where: any = { projectId };
     if (characterIds && characterIds.length > 0) {
       where = { projectId, id: { in: characterIds } };
@@ -158,14 +156,26 @@ export class StoryboardService {
   ): string[] {
     const matchedIds: string[] = [];
     for (const name of shotCharacterNames) {
-      const matched = characters.find(
-        (c) => c.name === name || name.includes(c.name) || c.name.includes(name),
-      );
+      const normalizedName = this.normalizeCharacterName(name);
+      const matched = characters.find((c) => {
+        const normalizedCharName = this.normalizeCharacterName(c.name);
+        return normalizedName === normalizedCharName;
+      });
       if (matched && !matchedIds.includes(matched.id)) {
         matchedIds.push(matched.id);
       }
     }
     return matchedIds;
+  }
+
+  /**
+   * 标准化角色名（用于匹配）
+   */
+  private normalizeCharacterName(name: string): string {
+    return name
+      .replace(/[^一-龥a-zA-Z0-9]/g, '')
+      .toLowerCase()
+      .trim();
   }
 
   private async getOrCreateStoryboard(projectId: string) {
@@ -274,7 +284,8 @@ ${style ? `5. 画面风格：${style}` : ''}
     }
   }
 
-  async deleteShot(projectId: string, shotId: string) {
+  async deleteShot(userId: string, projectId: string, shotId: string) {
+    await this.verifyProjectAccess(userId, projectId);
     const shot = await this.prisma.shot.findFirst({
       where: { id: shotId, projectId },
     });
@@ -287,7 +298,8 @@ ${style ? `5. 画面风格：${style}` : ''}
     return { success: true };
   }
 
-  async updateShot(projectId: string, shotId: string, dto: UpdateShotDto) {
+  async updateShot(userId: string, projectId: string, shotId: string, dto: UpdateShotDto) {
+    await this.verifyProjectAccess(userId, projectId);
     const shot = await this.prisma.shot.findFirst({
       where: { id: shotId, projectId },
     });
@@ -318,7 +330,6 @@ ${style ? `5. 画面风格：${style}` : ''}
     if (dto.subtitle !== undefined) mergedParams.subtitle = dto.subtitle;
     if (dto.title !== undefined) mergedParams.title = dto.title;
     if (dto.description !== undefined) mergedParams.description = dto.description;
-    if (dto.cameraMovement !== undefined) mergedParams.cameraMovement = dto.cameraMovement;
 
     const updateData: any = { params: mergedParams };
     if (dto.prompt !== undefined) updateData.prompt = dto.prompt;
@@ -354,8 +365,8 @@ ${style ? `5. 画面风格：${style}` : ''}
     }
 
     // 根据绑定的角色 ID 获取角色信息，并注入到提示词中
-    const characterPrompt = await this.buildCharacterPromptForShot(userId, projectId, params?.characterIds || []);
-    const finalPrompt = characterPrompt ? `${prompt}, ${characterPrompt}` : prompt;
+    const characterPrompt = await this.buildCharacterPromptForShot(projectId, params?.characterIds || []);
+    const finalPrompt = characterPrompt ? `${characterPrompt}, ${prompt}` : prompt;
 
     // 根据项目比例确定图片尺寸
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
@@ -405,7 +416,6 @@ ${style ? `5. 画面风格：${style}` : ''}
    * 为分镜构建角色一致性提示词
    */
   private async buildCharacterPromptForShot(
-    userId: string,
     projectId: string,
     characterIds: string[],
   ): Promise<string> {

@@ -3,11 +3,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { charactersApi } from "@/lib/api";
-import type { Shot } from "@/lib/api";
 
 interface ShotCharacterBindingProps {
   projectId: string;
-  shot: Shot;
   selectedCharacterIds: string[];
   onChange: (characterIds: string[]) => void;
   readOnly?: boolean;
@@ -15,7 +13,6 @@ interface ShotCharacterBindingProps {
 
 export function ShotCharacterBinding({
   projectId,
-  shot,
   selectedCharacterIds,
   onChange,
   readOnly = false,

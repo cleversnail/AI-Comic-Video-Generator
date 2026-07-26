@@ -16,8 +16,11 @@ export class StoryboardController {
 
   @Get()
   @ApiOperation({ summary: '获取项目的分镜列表' })
-  async listShots(@Param('projectId') projectId: string) {
-    return this.storyboardService.listShots(projectId);
+  async listShots(
+    @CurrentUser('id') userId: string,
+    @Param('projectId') projectId: string,
+  ) {
+    return this.storyboardService.listShots(userId, projectId);
   }
 
   @Post('generate')
@@ -44,19 +47,21 @@ export class StoryboardController {
   @Delete('shots/:shotId')
   @ApiOperation({ summary: '删除分镜' })
   async deleteShot(
+    @CurrentUser('id') userId: string,
     @Param('projectId') projectId: string,
     @Param('shotId') shotId: string,
   ) {
-    return this.storyboardService.deleteShot(projectId, shotId);
+    return this.storyboardService.deleteShot(userId, projectId, shotId);
   }
 
   @Patch('shots/:shotId')
   @ApiOperation({ summary: '更新分镜参数（角色绑定、景别、角度、情绪等）' })
   async updateShot(
+    @CurrentUser('id') userId: string,
     @Param('projectId') projectId: string,
     @Param('shotId') shotId: string,
     @Body() dto: UpdateShotDto,
   ) {
-    return this.storyboardService.updateShot(projectId, shotId, dto);
+    return this.storyboardService.updateShot(userId, projectId, shotId, dto);
   }
 }
