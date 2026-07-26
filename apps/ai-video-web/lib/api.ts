@@ -261,6 +261,14 @@ export const storyboardApi = {
     api.patch<Shot>(`/projects/${projectId}/storyboard/shots/${shotId}`, data).then((r) => r.data),
   deleteShot: (projectId: string, shotId: string) =>
     api.delete(`/projects/${projectId}/storyboard/shots/${shotId}`).then((r) => r.data),
+  generateTts: (projectId: string, shotId: string, data: { voiceId?: string; speed?: number }) =>
+    api.post<{ data: { shotId: string; audioUrl: string; duration: number } }>(
+      `/projects/${projectId}/storyboard/shots/${shotId}/tts`, data
+    ).then((r) => r.data.data),
+  generateTtsBatch: (projectId: string, data: { shotIds?: string[]; voiceId?: string; speed?: number }) =>
+    api.post<{ data: { total: number; success: number; failed: number; results: Array<{ shotId: string; audioUrl: string; duration: number; status: string }> } }>(
+      `/projects/${projectId}/storyboard/tts/batch`, data
+    ).then((r) => r.data.data),
 };
 
 // ==================== Generations API ====================

@@ -13,6 +13,7 @@ import { BackButton } from "@/components/navigation/back-button";
 import { CharacterList } from "@/components/characters/character-list";
 import { ShotCharacterBinding } from "@/components/storyboard/shot-character-binding";
 import { ShotDetailPanel } from "@/components/storyboard/shot-detail-panel";
+import { TtsPanel } from "@/components/storyboard/tts-panel";
 
 const tabs = [
   { id: "characters", label: "角色" },
@@ -75,7 +76,7 @@ export default function StudioPage() {
   isGeneratingPreview={previewMutation.isPending}
   onClose={() => setSelectedShotId(null)}
 />)}</div>)}
-          {activeTab==="timeline"&&(<div className="p-6 max-w-4xl"><h2 className="font-display text-2xl font-bold text-white mb-6">时间轴与音频</h2>{shots.length===0?<p className="text-text-secondary">暂无分镜</p>:<div className="space-y-2">{shots.map((shot: Shot)=>(<div key={shot.id} className="flex items-center gap-3 p-3 rounded-lg bg-panel-mid border border-divider"><span className="text-xs text-text-disabled font-mono w-8">#{shot.sequence}</span><div className="flex-1"><p className="text-sm text-white">{shot.prompt?.substring(0,40)||`分镜 ${shot.sequence}`}</p></div><span className="text-xs text-text-disabled">{shot.duration||"0"}s</span><PlayIcon className="w-4 h-4 text-text-secondary"/></div>))}</div>}</div>)}
+          {activeTab==="timeline"&&(<TtsPanel projectId={projectId} shots={shots} />)}
         </div>
       </div>
     </div>

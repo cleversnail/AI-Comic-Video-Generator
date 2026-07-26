@@ -4,6 +4,7 @@ import { StoryboardService } from './storyboard.service';
 import { GenerateShotsDto } from './dto/generate-shots.dto';
 import { GeneratePreviewDto } from './dto/generate-preview.dto';
 import { UpdateShotDto } from './dto/update-shot.dto';
+import { GenerateTtsDto, GenerateTtsForShotsDto } from './dto/generate-tts.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 
@@ -63,5 +64,26 @@ export class StoryboardController {
     @Body() dto: UpdateShotDto,
   ) {
     return this.storyboardService.updateShot(userId, projectId, shotId, dto);
+  }
+
+  @Post('shots/:shotId/tts')
+  @ApiOperation({ summary: '为单个分镜生成 TTS 配音' })
+  async generateTtsForShot(
+    @CurrentUser('id') userId: string,
+    @Param('projectId') projectId: string,
+    @Param('shotId') shotId: string,
+    @Body() dto: GenerateTtsDto,
+  ) {
+    return this.storyboardService.generateTtsForShot(userId, projectId, shotId, dto.voiceId, dto.speed);
+  }
+
+  @Post('tts/batch')
+  @ApiOperation({ summary: '批量为分镜生成 TTS 配音' })
+  async generateTtsForShots(
+    @CurrentUser('id') userId: string,
+    @Param('projectId') projectId: string,
+    @Body() dto: GenerateTtsForShotsDto,
+  ) {
+    return this.storyboardService.generateTtsForShots(userId, projectId, dto.shotIds, dto.voiceId, dto.speed);
   }
 }
