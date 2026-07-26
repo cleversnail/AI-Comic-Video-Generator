@@ -198,6 +198,28 @@ export const authApi = {
 
 // ==================== Models API ====================
 
+export interface CostSummary {
+  totalCalls: number;
+  totalCost: number;
+  byCapability: Array<{ capability: string; calls: number; cost: number }>;
+  keys: Array<{
+    id: string;
+    modelId: string;
+    modelName: string;
+    capability: string;
+    alias: string;
+    totalCalls: number;
+    estimatedCost: number;
+  }>;
+}
+
+export interface ProjectCostSummary {
+  projectId: string;
+  totalTasks: number;
+  totalCost: number;
+  byCapability: Array<{ capability: string; count: number; cost: number }>;
+}
+
 export const modelsApi = {
   listModels: (capability?: string) => api.get<any>("/models", { params: { capability } }).then((r) => r.data.data),
   getModel: (id: string) => api.get<AIModel>(`/models/${id}`).then((r) => r.data),
@@ -206,6 +228,8 @@ export const modelsApi = {
   deleteApiKey: (id: string) => api.delete(`/models/api-keys/${id}`).then((r) => r.data),
   setPreferences: (data: { projectId: string; modelId: string }) => api.post("/models/preferences", data).then((r) => r.data),
   getPreferences: (projectId: string) => api.get(`/models/preferences/${projectId}`).then((r) => r.data),
+  getCostSummary: () => api.get<{ data: CostSummary }>("/models/cost/summary").then((r) => r.data.data),
+  getProjectCost: (projectId: string) => api.get<{ data: ProjectCostSummary }>(`/models/cost/project/${projectId}`).then((r) => r.data.data),
 };
 
 // ==================== Projects API ====================

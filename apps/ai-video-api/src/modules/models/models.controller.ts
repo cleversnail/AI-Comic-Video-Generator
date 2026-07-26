@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ModelsService } from './models.service';
+import { CostService } from './cost.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 import { UpdateModelPreferenceDto } from './dto/update-model-preference.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -9,7 +10,10 @@ import { CurrentUser } from '../auth/current-user.decorator';
 @ApiTags('模型与 API Key')
 @Controller('models')
 export class ModelsController {
-  constructor(private readonly modelsService: ModelsService) {}
+  constructor(
+    private readonly modelsService: ModelsService,
+    private readonly costService: CostService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: '获取模型列表' })
@@ -61,5 +65,21 @@ export class ModelsController {
   @ApiOperation({ summary: '获取项目级模型配置' })
   async getPreference(@CurrentUser('id') userId: string, @Param('projectId') projectId: string) {
     return this.modelsService.getProjectPreference(userId, projectId);
+  }
+
+  @Get('cost/summary')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '获取用户成本统计' })
+  async getCostSummary(@CurrentUser('id') userId: string) {
+    return this.costService.getUserCostSummary(userId);
+  }
+
+  @Get('cost/project/:projectId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '获取项目成本统计' })
+  async getProjectCost(@CurrentUser('id') userId: string, @Param('projectId') projectId: string) {
+    return this.costService.getProjectCostSummary(userId, projectId);
   }
 }
