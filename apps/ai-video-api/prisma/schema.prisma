@@ -21,6 +21,7 @@ model User {
 
   projects Project[]
   apiKeys  UserApiKey[]
+  characterLibrary CharacterLibrary[]
 
   @@map("users")
 }
@@ -86,10 +87,41 @@ model Character {
   projectId String  @map("project_id")
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  libraryCharacterId String?            @map("library_character_id")
+  libraryCharacter   CharacterLibrary?  @relation(fields: [libraryCharacterId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("characters")
+}
+
+model CharacterLibrary {
+  id          String  @id @default(uuid())
+  name        String
+  gender      String?
+  age         Int?
+  role        String?
+  personality String? @db.Text
+  appearance  String? @db.Text
+  outfit      String? @db.Text
+  prompt      String? @db.Text
+  mainImage   String? @map("main_image")
+  images      Json?
+  viewImages  Json?   @map("view_images")
+  variants    Json?
+  lockLevel   String? @map("lock_level")
+  tags        Json?    // ["主角", "校园", "古风"] 用于搜索和分类
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  characters Character[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("character_library")
 }
 
 model Storyboard {

@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CharactersService } from './characters.service';
+import { CharacterLibraryService, CreateLibraryCharacterDto } from './character-library.service';
 import { CreateCharacterDto } from './dto/create-character.dto';
 import { UpdateCharacterDto } from './dto/update-character.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -11,7 +12,10 @@ import { CurrentUser } from '../auth/current-user.decorator';
 @UseGuards(JwtAuthGuard)
 @Controller('projects/:projectId/characters')
 export class CharactersController {
-  constructor(private readonly charactersService: CharactersService) {}
+  constructor(
+    private readonly charactersService: CharactersService,
+    private readonly characterLibraryService: CharacterLibraryService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: '获取项目角色列表' })
@@ -71,5 +75,71 @@ export class CharactersController {
   @ApiOperation({ summary: '删除角色变体' })
   async deleteVariant(@CurrentUser('id') userId: string, @Param('projectId') projectId: string, @Param('characterId') characterId: string, @Param('variantId') variantId: string) {
     return this.charactersService.deleteVariant(userId, projectId, characterId, variantId);
+  }
+
+  // ==================== Character Library Endpoints ====================
+
+  @Post(':characterId/save-to-library')
+  @ApiOperation({ summary: '将角色保存到角色库' })
+  async saveToLibrary(
+    @CurrentUser('id') userId: string,
+    @Param('characterId') characterId: string,
+    @Body() body?: { tags?: string[] },
+  ) {
+    return this.characterLibraryService.saveToLibrary(userId, characterId, body?.tags);
+  }
+
+  @Post('import-from-library/:libraryCharacterId')
+  @ApiOperation({ summary: '从角色库导入角色' })
+  async importFromLibrary(
+    @CurrentUser('id') userId: string,
+    @Param('projectId') projectId: string,
+    @Param('libraryCharacterId') libraryCharacterId: string,
+  ) {
+    return this.characterLibraryService.importToProject(userId, projectId, libraryCharacterId);
+  }
+}
+
+@ApiTags('角色库')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('character-library')
+export class CharacterLibraryController {
+  constructor(private readonly characterLibraryService: CharacterLibraryService) {}
+
+  @Get()
+  @ApiOperation({ summary: '获取角色库列表' })
+  async list(@CurrentUser('id') userId: string, @Query('tag') tag?: string) {
+    return this.characterLibraryService.listLibraryCharacters(userId, tag);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: '获取角色库详情' })
+  async getOne(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.characterLibraryService.getLibraryCharacter(userId, id);
+  }
+
+  @Post()
+  @ApiOperation({ summary: '创建角色库角色' })
+  async create(@CurrentUser('id') userId: string, @Body() dto: CreateLibraryCharacterDto) {
+    return this.characterLibraryService.createLibraryCharacter(userId, dto);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: '更新角色库角色' })
+  async update(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() dto: Partial<CreateLibraryCharacterDto>) {
+    return this.characterLibraryService.updateLibraryCharacter(userId, id, dto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: '删除角色库角色' })
+  async delete(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.characterLibraryService.deleteLibraryCharacter(userId, id);
+  }
+
+  @Get(':id/references')
+  @ApiOperation({ summary: '获取角色的所有项目引用' })
+  async getReferences(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.characterLibraryService.getCharacterReferences(userId, id);
   }
 }

@@ -107,6 +107,25 @@ export interface VariantType {
   category: string;
 }
 
+export interface LibraryCharacter {
+  id: string;
+  name: string;
+  gender?: string;
+  age?: number;
+  role?: string;
+  personality?: string;
+  appearance?: string;
+  outfit?: string;
+  prompt?: string;
+  mainImage?: string;
+  viewImages?: any;
+  variants?: any;
+  lockLevel?: string;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ==================== Storyboard Types ====================
 export interface Storyboard { id: string; projectId: string; shots: Shot[]; }
 
@@ -308,6 +327,35 @@ export const charactersApi = {
     api.delete(`/projects/${projectId}/characters/${characterId}/variants/${variantId}`).then((r) => r.data),
   getVariantTypes: () =>
     api.get<{ data: VariantType[] }>('/projects/0/characters/variant-types').then((r) => r.data.data),
+  // Character Library APIs
+  saveToLibrary: (projectId: string, characterId: string, tags?: string[]) =>
+    api.post<{ data: LibraryCharacter }>(
+      `/projects/${projectId}/characters/${characterId}/save-to-library`,
+      { tags }
+    ).then((r) => r.data.data),
+  importFromLibrary: (projectId: string, libraryCharacterId: string) =>
+    api.post<{ data: Character }>(
+      `/projects/${projectId}/characters/import-from-library/${libraryCharacterId}`
+    ).then((r) => r.data.data),
+};
+
+// ==================== Character Library API ====================
+
+export const characterLibraryApi = {
+  list: (tag?: string) =>
+    api.get<{ data: LibraryCharacter[] }>('/character-library', { params: { tag } }).then((r) => r.data.data),
+  get: (id: string) =>
+    api.get<{ data: LibraryCharacter }>(`/character-library/${id}`).then((r) => r.data.data),
+  create: (data: Partial<LibraryCharacter>) =>
+    api.post<{ data: LibraryCharacter }>('/character-library', data).then((r) => r.data.data),
+  update: (id: string, data: Partial<LibraryCharacter>) =>
+    api.put<{ data: LibraryCharacter }>(`/character-library/${id}`, data).then((r) => r.data.data),
+  delete: (id: string) =>
+    api.delete(`/character-library/${id}`).then((r) => r.data),
+  getReferences: (id: string) =>
+    api.get<{ data: { libraryCharacter: LibraryCharacter; references: Array<{ id: string; projectId: string; projectName: string; name: string }> } }>(
+      `/character-library/${id}/references`
+    ).then((r) => r.data.data),
 };
 
 // ==================== Storyboard API ====================

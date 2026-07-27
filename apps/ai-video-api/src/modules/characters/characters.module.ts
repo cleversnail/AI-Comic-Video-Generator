@@ -1,14 +1,15 @@
 import { Module } from '@nestjs/common';
-import { CharactersController } from './characters.controller';
+import { CharactersController, CharacterLibraryController } from './characters.controller';
 import { CharactersService } from './characters.service';
+import { CharacterLibraryService } from './character-library.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { ModelsModule } from '../models/models.module';
 import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [PrismaModule, ModelsModule, StorageModule],
-  controllers: [CharactersController],
-  providers: [CharactersService],
-  exports: [CharactersService],
+  controllers: [CharactersController, CharacterLibraryController],
+  providers: [CharactersService, CharacterLibraryService],
+  exports: [CharactersService, CharacterLibraryService],
 })
 export class CharactersModule {}
