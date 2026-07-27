@@ -394,9 +394,51 @@ export interface ComposeResult {
   createdAt: string;
 }
 
+export interface PlatformConfig {
+  id: string;
+  name: string;
+  icon: string;
+  aspectRatio: string;
+  maxWidth: number;
+  maxHeight: number;
+  maxDuration: number;
+  subtitleStyle: {
+    fontSize: number;
+    position: 'bottom' | 'top' | 'center';
+    margin: number;
+  };
+  metadata: {
+    maxTitleLength: number;
+    maxDescriptionLength: number;
+    maxTags: number;
+  };
+}
+
+export interface DistributeConfig {
+  platformId: string;
+  title: string;
+  description?: string;
+  tags?: string[];
+  coverUrl?: string;
+}
+
 export const composeApi = {
   composeProject: (projectId: string) =>
     api.post<{ data: ComposeResult }>(`/projects/${projectId}/compose`).then((r) => r.data.data),
+  getPlatforms: () =>
+    api.get<{ data: PlatformConfig[] }>('/projects/0/compose/distribute/platforms').then((r) => r.data.data),
+  getPlatform: (platformId: string) =>
+    api.get<{ data: PlatformConfig }>(`/projects/0/compose/distribute/platforms/${platformId}`).then((r) => r.data.data),
+  getSuggestedConfig: (projectId: string, platformId: string) =>
+    api.get<{ data: { platform: PlatformConfig; suggestedTitle: string; suggestedDescription: string; suggestedTags: string[]; videoDuration: number; needsTrim: boolean } }>(
+      `/projects/${projectId}/compose/distribute/suggest/${platformId}`
+    ).then((r) => r.data.data),
+  validateConfig: (config: DistributeConfig) =>
+    api.post<{ valid: boolean; errors: string[] }>('/projects/0/compose/distribute/validate', config).then((r) => r.data),
+  exportPackages: (projectId: string, configs: DistributeConfig[]) =>
+    api.post<{ data: { totalPlatforms: number; validPlatforms: number; allValid: boolean; results: Array<{ platformId: string; platformName: string; config: DistributeConfig; validation: { valid: boolean; errors: string[] } }> } }>(
+      `/projects/${projectId}/compose/distribute/export`, configs
+    ).then((r) => r.data.data),
 };
 
 export default api;
