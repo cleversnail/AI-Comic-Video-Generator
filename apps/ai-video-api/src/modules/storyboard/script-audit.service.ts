@@ -37,7 +37,6 @@ export class ScriptAuditService {
     const project = await this.prisma.project.findFirst({
       where: { id: projectId },
     });
-    if (!project) throw new NotFoundException('项目不存在');
 
     const characters = await this.prisma.character.findMany({
       where: { projectId },
