@@ -135,6 +135,7 @@ export interface Shot {
   prompt: string;
   negativePrompt?: string;
   imageUrl?: string;
+  resultUrl?: string;
   videoUrl?: string;
   audioUrl?: string;
   duration?: number;

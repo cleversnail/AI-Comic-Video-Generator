@@ -323,6 +323,7 @@ export default function StudioPage() {
 }
 
 function ShotCard({ shot, isSelected, onClick }: { shot: Shot; isSelected: boolean; onClick: () => void }) {
+  const previewUrl = shot.resultUrl || shot.imageUrl;
   return (
     <motion.div
       layout
@@ -334,8 +335,8 @@ function ShotCard({ shot, isSelected, onClick }: { shot: Shot; isSelected: boole
       onClick={onClick}
     >
       <div className="aspect-[3/4] bg-gradient-to-br from-anime-purple/10 to-panel-mid flex items-center justify-center relative">
-        {shot.imageUrl ? (
-          <img src={shot.imageUrl} alt={`Shot ${shot.sequence}`} className="w-full h-full object-cover" />
+        {previewUrl ? (
+          <img src={previewUrl} alt={`Shot ${shot.sequence}`} className="w-full h-full object-cover" />
         ) : shot.status === "generating" ? (
           <div className="w-8 h-8 rounded-full border-2 border-anime-purple border-t-transparent animate-spin" />
         ) : (
@@ -344,13 +345,15 @@ function ShotCard({ shot, isSelected, onClick }: { shot: Shot; isSelected: boole
         <Badge
           className="absolute top-2 right-2 text-[10px]"
           variant={
-            shot.status === "completed" ? "success"
+            shot.status === "previewed" ? "success"
+            : shot.status === "completed" ? "success"
             : shot.status === "generating" ? "warning"
             : shot.status === "failed" ? "error"
             : "info"
           }
         >
-          {shot.status === "completed" ? "已完成"
+          {shot.status === "previewed" ? "已预览"
+            : shot.status === "completed" ? "已完成"
             : shot.status === "generating" ? "生成中"
             : shot.status === "failed" ? "失败"
             : "待生成"}
