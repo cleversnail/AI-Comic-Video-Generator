@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Character, CreateCharacterDto, charactersApi } from "@/lib/api";
 import { CharacterCard } from "./character-card";
 import { CharacterDetailPanel } from "./character-detail-panel";
+import { useToast } from "@/components/ui/toast";
 
 interface CharacterListProps {
   projectId: string;
@@ -15,6 +16,7 @@ interface CharacterListProps {
 
 export function CharacterList({ projectId }: CharacterListProps) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newCharacter, setNewCharacter] = useState<CreateCharacterDto>({
@@ -52,6 +54,10 @@ export function CharacterList({ projectId }: CharacterListProps) {
       });
       // Select the newly created character
       setSelectedCharacter(newChar);
+      toast.success("角色创建成功");
+    },
+    onError: (error: any) => {
+      toast.error("创建失败", error?.response?.data?.message || error?.message);
     },
   });
 
@@ -61,6 +67,10 @@ export function CharacterList({ projectId }: CharacterListProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
       setSelectedCharacter(null);
+      toast.success("角色已删除");
+    },
+    onError: (error: any) => {
+      toast.error("删除失败", error?.response?.data?.message || error?.message);
     },
   });
 

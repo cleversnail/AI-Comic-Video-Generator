@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { projectsApi, ProjectVersion } from "@/lib/api";
+import { useToast } from "@/components/ui/toast";
 
 interface VersionHistoryProps {
   projectId: string;
@@ -14,6 +15,7 @@ interface VersionHistoryProps {
 
 export function VersionHistory({ projectId, isOpen, onClose }: VersionHistoryProps) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [label, setLabel] = useState("");
 
   const { data: versions = [], isLoading } = useQuery({
@@ -27,6 +29,10 @@ export function VersionHistory({ projectId, isOpen, onClose }: VersionHistoryPro
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["versions", projectId] });
       setLabel("");
+      toast.success("版本快照已保存");
+    },
+    onError: (error: any) => {
+      toast.error("保存失败", error?.response?.data?.message || error?.message);
     },
   });
 
@@ -36,8 +42,11 @@ export function VersionHistory({ projectId, isOpen, onClose }: VersionHistoryPro
       queryClient.invalidateQueries({ queryKey: ["versions", projectId] });
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
-      alert(`已恢复到版本 ${data.restoredVersion}（${data.label}）`);
+      toast.success("版本恢复成功", `已恢复到版本 ${data.restoredVersion}（${data.label}）`);
       onClose();
+    },
+    onError: (error: any) => {
+      toast.error("恢复失败", error?.response?.data?.message || error?.message);
     },
   });
 
@@ -45,6 +54,10 @@ export function VersionHistory({ projectId, isOpen, onClose }: VersionHistoryPro
     mutationFn: (versionId: string) => projectsApi.deleteVersion(projectId, versionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["versions", projectId] });
+      toast.success("版本已删除");
+    },
+    onError: (error: any) => {
+      toast.error("删除失败", error?.response?.data?.message || error?.message);
     },
   });
 

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { projectsApi, Episode } from "@/lib/api";
+import { useToast } from "@/components/ui/toast";
 
 interface EpisodeListProps {
   projectId: string;
@@ -16,6 +17,7 @@ interface EpisodeListProps {
 
 export function EpisodeList({ projectId, selectedEpisodeId, onSelectEpisode }: EpisodeListProps) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -36,6 +38,10 @@ export function EpisodeList({ projectId, selectedEpisodeId, onSelectEpisode }: E
       setShowCreate(false);
       setNewTitle("");
       setNewDescription("");
+      toast.success("剧集创建成功");
+    },
+    onError: (error: any) => {
+      toast.error("创建失败", error?.response?.data?.message || error?.message);
     },
   });
 
@@ -44,6 +50,10 @@ export function EpisodeList({ projectId, selectedEpisodeId, onSelectEpisode }: E
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["episodes", projectId] });
       if (onSelectEpisode) onSelectEpisode(null);
+      toast.success("剧集已删除");
+    },
+    onError: (error: any) => {
+      toast.error("删除失败", error?.response?.data?.message || error?.message);
     },
   });
 

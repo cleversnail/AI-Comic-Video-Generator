@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { templatesApi, Template } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/toast";
 
 interface TemplateMarketProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ const categories = [
 export function TemplateMarket({ isOpen, onClose }: TemplateMarketProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -45,9 +47,12 @@ export function TemplateMarket({ isOpen, onClose }: TemplateMarketProps) {
     mutationFn: (templateId: string) => templatesApi.clone(templateId),
     onSuccess: (project) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      alert(`项目「${project.name}」创建成功！`);
+      toast.success("项目创建成功", `项目「${project.name}」已创建`);
       onClose();
       router.push(`/projects/${project.id}/studio`);
+    },
+    onError: (error: any) => {
+      toast.error("复刻失败", error?.response?.data?.message || error?.message);
     },
   });
 
@@ -56,6 +61,9 @@ export function TemplateMarket({ isOpen, onClose }: TemplateMarketProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["templates"] });
       queryClient.invalidateQueries({ queryKey: ["templateFavorites"] });
+    },
+    onError: (error: any) => {
+      toast.error("操作失败", error?.response?.data?.message || error?.message);
     },
   });
 

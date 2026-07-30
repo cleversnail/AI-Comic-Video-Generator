@@ -17,6 +17,7 @@ import { TtsPanel } from "@/components/storyboard/tts-panel";
 import { StoryboardReader } from "@/components/storyboard/storyboard-reader";
 import { AssistantChat } from "@/components/assistant/assistant-chat";
 import { VersionHistory } from "@/components/version/version-history";
+import { useToast } from "@/components/ui/toast";
 
 const tabs = [
   { id: "characters", label: "角色" },
@@ -29,6 +30,7 @@ export default function StudioPage() {
   const params = useParams();
   const projectId = params.id as string;
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState("story");
   const [prompt, setPrompt] = useState("");
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
@@ -47,20 +49,44 @@ export default function StudioPage() {
   const generateMutation = useMutation({
     mutationFn: (data: { prompt: string; characterIds?: string[] }) =>
       storyboardApi.generate(projectId, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
+      toast.success("分镜生成成功");
+    },
+    onError: (error: any) => {
+      toast.error("分镜生成失败", error?.response?.data?.message || error?.message);
+    },
   });
   const previewMutation = useMutation({
     mutationFn: (shotId: string) => storyboardApi.previewShot(projectId, shotId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
+      toast.success("预览图生成成功");
+    },
+    onError: (error: any) => {
+      toast.error("预览图生成失败", error?.response?.data?.message || error?.message);
+    },
   });
   const deleteShotMutation = useMutation({
     mutationFn: (shotId: string) => storyboardApi.deleteShot(projectId, shotId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
+      toast.success("分镜已删除");
+    },
+    onError: (error: any) => {
+      toast.error("删除失败", error?.response?.data?.message || error?.message);
+    },
   });
   const updateShotMutation = useMutation({
     mutationFn: (data: { shotId: string; data: any }) =>
       storyboardApi.updateShot(projectId, data.shotId, data.data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
+      toast.success("分镜已更新");
+    },
+    onError: (error: any) => {
+      toast.error("更新失败", error?.response?.data?.message || error?.message);
+    },
   });
 
   const shots: Shot[] = storyboard?.shots || [];
