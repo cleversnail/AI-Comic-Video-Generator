@@ -23,7 +23,7 @@ export class StoryboardService {
       where: { projectId },
       orderBy: { sequence: 'asc' },
     });
-    return { data: shots };
+    return { shots };
   }
 
   async deleteShot(userId: string, projectId: string, shotId: string) {
