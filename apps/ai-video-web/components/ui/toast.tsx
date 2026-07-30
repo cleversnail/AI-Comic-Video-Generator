@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, createContext, useContext, useCallback } from "react";
+import { useState, useEffect, createContext, useContext, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Toast {
@@ -23,10 +23,9 @@ const ToastContext = createContext<ToastContextType | null>(null);
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
-    // Fallback to alert if toast provider is not available
     return {
       toast: (t: any) => alert(`${t.title}${t.message ? '\n' + t.message : ''}`),
-      success: (title: string, message?: string) => alert(`${title}${message ? '\n' + message : ''}`),
+      success: (title: string, message?: string) => alert(`✅ ${title}${message ? '\n' + message : ''}`),
       error: (title: string, message?: string) => alert(`❌ ${title}${message ? '\n' + message : ''}`),
       warning: (title: string, message?: string) => alert(`⚠️ ${title}${message ? '\n' + message : ''}`),
       info: (title: string, message?: string) => alert(`ℹ️ ${title}${message ? '\n' + message : ''}`),
@@ -37,29 +36,29 @@ export function useToast() {
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
 
   const addToast = useCallback((toast: Omit<Toast, "id">) => {
-    // Deduplicate: prevent same toast from appearing multiple times in quick succession
-    const key = `${toast.type}-${toast.title}`;
-    setToasts((prev) => {
-      const existing = prev.find((t) => `${t.type}-${t.title}` === key);
-      if (existing) return prev; // Skip duplicate
-      return prev;
-    });
-
     const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
-    const newToast = { ...toast, id };
-    setToasts((prev) => {
-      // Double check for duplicates
-      const existing = prev.find((t) => `${t.type}-${t.title}` === key);
-      if (existing) return prev;
-      return [...prev, newToast];
-    });
+    const duration = toast.duration || 3000;
+
+    const newToast: Toast = { ...toast, id };
+    setToasts((prev) => [...prev, newToast]);
 
     // Auto remove after duration
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, toast.duration || 3000);
+      timersRef.current.delete(id);
+    }, duration);
+
+    timersRef.current.set(id, timer);
   }, []);
 
   const contextValue: ToastContextType = {
@@ -70,9 +69,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     info: (title, message) => addToast({ type: "info", title, message }),
   };
 
-  const removeToast = (id: string) => {
+  const removeToast = useCallback((id: string) => {
+    const timer = timersRef.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timersRef.current.delete(id);
+    }
     setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  }, []);
 
   const typeStyles: Record<string, { bg: string; border: string; icon: string }> = {
     success: { bg: "bg-green-500/10", border: "border-green-500/30", icon: "✓" },
@@ -94,6 +98,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 initial={{ opacity: 0, x: 100, scale: 0.95 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: 100, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
                 className={`${style.bg} ${style.border} border rounded-xl p-4 shadow-2xl backdrop-blur-sm cursor-pointer`}
                 onClick={() => removeToast(toast.id)}
               >
