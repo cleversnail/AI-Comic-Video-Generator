@@ -16,6 +16,7 @@ import { CommonModule } from './modules/common/common.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { WebSocketModule } from './modules/websocket/websocket.module';
+import { AgentsModule } from './modules/agents/agents.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { WebSocketModule } from './modules/websocket/websocket.module';
     CharactersModule,
     ComposeModule,
     GenerationsModule,
+    AgentsModule,
   ],
   controllers: [AppController],
   providers: [

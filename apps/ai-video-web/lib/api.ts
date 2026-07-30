@@ -567,6 +567,46 @@ export interface LipSyncConfig {
   autoCorrectDrift?: boolean;
 }
 
+// ==================== Agent Types ====================
+
+export type AgentRole = 'writer' | 'storyboard_artist' | 'director' | 'character_designer' | 'reviewer';
+
+export interface WorkflowSummary {
+  id: string;
+  name: string;
+  description: string;
+  stepCount: number;
+}
+
+export interface WorkflowStep {
+  id: string;
+  name: string;
+  agentRole: AgentRole;
+  inputTemplate: string;
+  outputKey: string;
+  dependencies?: string[];
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description: string;
+  steps: WorkflowStep[];
+}
+
+export interface WorkflowResult {
+  workflowId: string;
+  status: 'running' | 'completed' | 'failed';
+  steps: Array<{
+    stepId: string;
+    agentRole: AgentRole;
+    status: string;
+    output?: string;
+    error?: string;
+  }>;
+  finalOutput?: Record<string, any>;
+}
+
 export const composeApi = {
   composeProject: (projectId: string) =>
     api.post<{ data: ComposeResult }>(`/projects/${projectId}/compose`).then((r) => r.data.data),
@@ -593,6 +633,19 @@ export const composeApi = {
     api.post<{ data: LipSyncTrack }>(`/projects/${projectId}/compose/lip-sync/smooth`, { track, windowSize }).then((r) => r.data.data),
   correctLipSyncDrift: (projectId: string, track: LipSyncTrack, audioDuration: number) =>
     api.post<{ data: LipSyncTrack }>(`/projects/${projectId}/compose/lip-sync/correct-drift`, { track, audioDuration }).then((r) => r.data.data),
+};
+
+// ==================== Agents API ====================
+
+export const agentsApi = {
+  getWorkflows: (projectId: string) =>
+    api.get<{ data: WorkflowSummary[] }>(`/projects/${projectId}/agents/workflows`).then((r) => r.data.data),
+  getWorkflow: (projectId: string, workflowId: string) =>
+    api.get<{ data: Workflow }>(`/projects/${projectId}/agents/workflows/${workflowId}`).then((r) => r.data.data),
+  executeWorkflow: (projectId: string, workflowId: string, inputs: Record<string, string>) =>
+    api.post<{ data: WorkflowResult }>(`/projects/${projectId}/agents/workflows/${workflowId}/execute`, { inputs }).then((r) => r.data.data),
+  executeAgent: (projectId: string, data: { role: AgentRole; input: string; context?: Record<string, any> }) =>
+    api.post<{ data: { output: string } }>(`/projects/${projectId}/agents/execute`, data).then((r) => r.data.data),
 };
 
 export default api;
