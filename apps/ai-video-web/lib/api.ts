@@ -245,6 +245,8 @@ export const modelsApi = {
   createApiKey: (data: { modelId: string; apiKey: string; alias?: string; isDefault?: boolean }) => api.post<UserApiKey>("/models/api-keys", data).then((r) => r.data),
   listMyApiKeys: () => api.get<any>("/models/api-keys/my").then((r) => r.data.data),
   deleteApiKey: (id: string) => api.delete(`/models/api-keys/${id}`).then((r) => r.data),
+  updateApiKey: (id: string, data: { apiKey?: string; alias?: string; isDefault?: boolean }) =>
+    api.put<{ data: UserApiKey }>(`/models/api-keys/${id}`, data).then((r) => r.data.data),
   setPreferences: (data: { projectId: string; modelId: string }) => api.post("/models/preferences", data).then((r) => r.data),
   getPreferences: (projectId: string) => api.get(`/models/preferences/${projectId}`).then((r) => r.data),
   getCostSummary: () => api.get<{ data: CostSummary }>("/models/cost/summary").then((r) => r.data.data),

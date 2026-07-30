@@ -168,6 +168,82 @@ export class ModelsService {
     return { success: true };
   }
 
+  async updateApiKey(userId: string, id: string, dto: { apiKey?: string; alias?: string; isDefault?: boolean }) {
+    const key = await this.prisma.userApiKey.findFirst({
+      where: { id, userId },
+      include: { model: true },
+    });
+
+    if (!key) {
+      throw new NotFoundException('API Key not found');
+    }
+
+    const updateData: any = {};
+
+    // 更新别名
+    if (dto.alias !== undefined) {
+      updateData.alias = dto.alias;
+    }
+
+    // 更新默认状态
+    if (dto.isDefault !== undefined) {
+      if (dto.isDefault) {
+        // 取消同模型的其他默认 Key
+        await this.prisma.userApiKey.updateMany({
+          where: { userId, modelId: key.modelId, id: { not: id } },
+          data: { isDefault: false },
+        });
+      }
+      updateData.isDefault = dto.isDefault;
+    }
+
+    // 更新 API Key（需要重新验证和加密）
+    if (dto.apiKey && dto.apiKey.trim()) {
+      // 验证新 Key
+      let validationResult;
+      try {
+        switch (key.model.capability) {
+          case 'llm':
+            validationResult = await this.adapterFactory.getLLMAdapter(key.modelId).validateKey(dto.apiKey);
+            break;
+          case 'image':
+            validationResult = await this.adapterFactory.getImageAdapter(key.modelId).validateKey(dto.apiKey);
+            break;
+          default:
+            validationResult = { valid: dto.apiKey.length > 10, message: '基础格式验证通过' };
+        }
+      } catch (error: any) {
+        validationResult = { valid: false, message: error.message };
+      }
+
+      if (!validationResult.valid) {
+        throw new BadRequestException(validationResult.message || 'API Key 验证失败');
+      }
+
+      updateData.keyEncrypted = this.encryptApiKey(dto.apiKey);
+      updateData.keyMask = `${dto.apiKey.slice(0, 4)}****${dto.apiKey.slice(-4)}`;
+      updateData.status = 'valid';
+      updateData.lastVerifiedAt = new Date();
+    }
+
+    const updated = await this.prisma.userApiKey.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return {
+      data: {
+        id: updated.id,
+        modelId: updated.modelId,
+        alias: updated.alias,
+        keyMask: updated.keyMask,
+        status: updated.status,
+        isDefault: updated.isDefault,
+        lastVerifiedAt: updated.lastVerifiedAt,
+      },
+    };
+  }
+
   async getProjectPreference(userId: string, projectId: string) {
     const preference = await this.prisma.modelPreference.findUnique({
       where: { projectId },

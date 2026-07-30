@@ -25,15 +25,50 @@ export default function ModelsPage() {
   const queryClient = useQueryClient();
   const [selectedCapability, setSelectedCapability] = useState("all");
   const [configuringModel, setConfiguringModel] = useState<AIModel|null>(null);
+  const [editingKeyId, setEditingKeyId] = useState<string|null>(null); // 编辑模式下的 Key ID
   const [apiKey, setApiKey] = useState("");
   const [alias, setAlias] = useState("");
   const [customModelName, setCustomModelName] = useState("");
   const { data: models=[], isLoading: modelsLoading } = useQuery({ queryKey: ["models",selectedCapability], queryFn: ()=>modelsApi.listModels(selectedCapability==="all"?undefined:selectedCapability) });
   const { data: apiKeys=[], isLoading: keysLoading } = useQuery({ queryKey: ["apiKeys"], queryFn: ()=>modelsApi.listMyApiKeys() });
-  const createKeyMutation = useMutation({ mutationFn: modelsApi.createApiKey, onSuccess: ()=>{ queryClient.invalidateQueries({ queryKey: ["apiKeys"] }); setConfiguringModel(null); setApiKey(""); setAlias(""); setCustomModelName(""); } });
+  const createKeyMutation = useMutation({ mutationFn: modelsApi.createApiKey, onSuccess: ()=>{ queryClient.invalidateQueries({ queryKey: ["apiKeys"] }); closeConfig(); } });
+  const updateKeyMutation = useMutation({ mutationFn: ({id, data}: {id: string; data: any})=>modelsApi.updateApiKey(id, data), onSuccess: ()=>{ queryClient.invalidateQueries({ queryKey: ["apiKeys"] }); closeConfig(); } });
   const deleteKeyMutation = useMutation({ mutationFn: modelsApi.deleteApiKey, onSuccess: ()=>{ queryClient.invalidateQueries({ queryKey: ["apiKeys"] }); } });
-  const handleSave = () => { if (!configuringModel||!apiKey.trim()) return; createKeyMutation.mutate({ modelId: configuringModel.id, apiKey: apiKey.trim(), alias: alias.trim()||`${configuringModel.name} Key`, isDefault: true }); };
   const isLoading = modelsLoading||keysLoading;
+
+  const closeConfig = () => {
+    setConfiguringModel(null);
+    setEditingKeyId(null);
+    setApiKey("");
+    setAlias("");
+    setCustomModelName("");
+  };
+
+  const handleSave = () => {
+    if (!configuringModel) return;
+
+    if (editingKeyId) {
+      // 编辑模式：更新现有 Key
+      const updateData: any = {};
+      if (alias.trim()) updateData.alias = alias.trim();
+      if (customModelName) updateData.modelId = customModelName; // 注意：这里可能需要后端支持
+      if (apiKey.trim()) updateData.apiKey = apiKey.trim();
+      updateKeyMutation.mutate({ id: editingKeyId, data: updateData });
+    } else {
+      // 新建模式
+      if (!apiKey.trim()) return;
+      createKeyMutation.mutate({
+        modelId: configuringModel.id,
+        apiKey: apiKey.trim(),
+        alias: alias.trim() || `${configuringModel.name} Key`,
+        isDefault: true,
+      });
+    }
+  };
+
+  const isPending = editingKeyId ? updateKeyMutation.isPending : createKeyMutation.isPending;
+  const isError = editingKeyId ? updateKeyMutation.isError : createKeyMutation.isError;
+  const error = editingKeyId ? updateKeyMutation.error : createKeyMutation.error;
 
   // 各能力推荐的模型列表
   const recommendedModels: Record<string, Array<{id: string; name: string; desc: string}>> = {
@@ -76,9 +111,11 @@ export default function ModelsPage() {
     setConfiguringModel(model);
     const existingKey = apiKeys.find((k: UserApiKey) => k.modelId === model.id);
     if (existingKey) {
+      setEditingKeyId(existingKey.id);
       setAlias(existingKey.alias || "");
       setCustomModelName(existingKey.modelId || "");
     } else {
+      setEditingKeyId(null);
       setAlias("");
       setCustomModelName("");
     }
@@ -164,7 +201,7 @@ export default function ModelsPage() {
       <h2 className="font-display text-xl font-bold text-white mb-4">模型配置</h2>
       <div className="flex flex-wrap gap-2 mb-8">{capabilities.map((cap)=>(<button key={cap.id} onClick={()=>setSelectedCapability(cap.id)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedCapability===cap.id?"bg-anime-purple text-white":"bg-panel-deep border border-divider text-text-secondary hover:text-white hover:border-anime-purple/40"}`}>{cap.name}</button>))}</div>
       {isLoading?(<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">{[1,2,3].map(i=><Card key={i} className="h-48 animate-pulse bg-panel-deep"/>)}</div>):(<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"><AnimatePresence mode="popLayout">{models.map((model: AIModel) =>{const {status,keyMask}=getStatus(model.id,apiKeys);return (<motion.div key={model.id} layout initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.95}} transition={{duration:0.2}}><Card className="h-full hover:border-anime-purple/30 transition-colors"><CardHeader className="pb-3"><div className="flex items-start justify-between"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-panel-mid flex items-center justify-center"><KeyIcon className="w-5 h-5 text-anime-purple"/></div><div><CardTitle className="text-base">{model.name}</CardTitle><CardDescription>{model.provider}</CardDescription></div></div><Badge variant={status==="configured"?"success":status==="not_configured"?"warning":"info"}>{status==="configured"?"已配置":status==="not_configured"?"未配置":"可选"}</Badge></div></CardHeader><CardContent><p className="text-sm text-text-secondary mb-1">{formatPrice(model.billingRule)}</p><p className="text-xs text-text-disabled line-clamp-2 mb-4 h-8">{model.description}</p>{status==="configured"&&keyMask&&(<div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-panel-mid border border-divider"><CheckIcon className="w-4 h-4 text-neon-cyan"/><span className="text-sm text-text-secondary font-mono">{keyMask}</span></div>)}<div className="flex gap-2"><Button variant={status==="configured"?"secondary":"primary"} size="sm" className="flex-1" onClick={()=>handleOpenConfig(model)}>{status==="configured"?"编辑配置":"配置 API Key"}</Button>{status==="configured"&&(<Button variant="outline" size="sm" className="px-2 border-warm-orange/30 text-warm-orange hover:bg-warm-orange/10" onClick={()=>{const key=apiKeys.find((k: UserApiKey) =>k.modelId===model.id);if(key)deleteKeyMutation.mutate(key.id);}}>删除</Button>)}<Button variant="outline" size="sm" className="px-2" onClick={()=>model.docUrl&&window.open(model.docUrl,"_blank")}><ExternalLinkIcon className="w-4 h-4"/></Button></div></CardContent></Card></motion.div>);})}</AnimatePresence></div>)}
-      <AnimatePresence>{configuringModel&&(<motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm" onClick={()=>setConfiguringModel(null)}><motion.div initial={{opacity:0,x:100}} animate={{opacity:1,x:0}} exit={{opacity:0,x:100}} onClick={e=>e.stopPropagation()} className="w-full max-w-md h-full bg-panel-deep border-l border-divider shadow-2xl overflow-y-auto"><div className="p-6 border-b border-divider"><div className="flex items-center justify-between"><div><h3 className="font-display text-xl font-bold text-white">{configuringModel.name}</h3><p className="text-sm text-text-secondary">{configuringModel.provider} · {capabilities.find((c)=>c.id===configuringModel.capability)?.name}</p></div><button onClick={()=>setConfiguringModel(null)} className="text-text-secondary hover:text-white">✕</button></div></div><div className="p-6 space-y-6">
+      <AnimatePresence>{configuringModel&&(<motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm" onClick={()=>closeConfig()}><motion.div initial={{opacity:0,x:100}} animate={{opacity:1,x:0}} exit={{opacity:0,x:100}} onClick={e=>e.stopPropagation()} className="w-full max-w-md h-full bg-panel-deep border-l border-divider shadow-2xl overflow-y-auto"><div className="p-6 border-b border-divider"><div className="flex items-center justify-between"><div><h3 className="font-display text-xl font-bold text-white">{configuringModel.name}</h3><p className="text-sm text-text-secondary">{configuringModel.provider} · {capabilities.find((c)=>c.id===configuringModel.capability)?.name}</p></div><button onClick={()=>closeConfig()} className="text-text-secondary hover:text-white">✕</button></div></div><div className="p-6 space-y-6">
         {/* 模型选择 */}
         <div className="p-4 rounded-lg bg-panel-mid border border-divider">
           <p className="text-sm font-medium text-text-secondary mb-3">选择模型</p>
@@ -199,7 +236,33 @@ export default function ModelsPage() {
           </div>
         </div>
 
-        <div className="p-4 rounded-lg bg-panel-mid border border-divider"><p className="text-sm text-text-secondary mb-2">参考价格</p><p className="text-white font-medium">{formatPrice(configuringModel.billingRule)}</p>{configuringModel.docUrl&&(<a href={configuringModel.docUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-anime-purple hover:underline mt-2">去官方获取 API Key<ExternalLinkIcon className="w-3 h-3"/></a>)}</div><div className="space-y-4"><div><label className="block text-sm font-medium text-text-secondary mb-2">API Key</label><Input type="password" placeholder="sk-..." value={apiKey} onChange={e=>setApiKey(e.target.value)}/></div><div><label className="block text-sm font-medium text-text-secondary mb-2">Key 别名</label><Input placeholder="例如：我的主 Key" value={alias} onChange={e=>setAlias(e.target.value)}/></div><ParameterFields parameters={configuringModel.parameters}/></div>{createKeyMutation.isError&&(<div className="p-3 rounded-lg bg-warm-orange/10 border border-warm-orange/30 text-warm-orange text-sm">{(createKeyMutation.error as ApiError)?.response?.data?.message||"验证失败，请检查 API Key"}</div>)}<Button className="w-full gap-2" onClick={handleSave} disabled={!apiKey.trim()||createKeyMutation.isPending} isLoading={createKeyMutation.isPending}><CheckIcon className="w-4 h-4"/>{createKeyMutation.isPending?"验证中...":"验证并保存"}</Button></div></motion.div></motion.div>)}</AnimatePresence>
+        <div className="p-4 rounded-lg bg-panel-mid border border-divider"><p className="text-sm text-text-secondary mb-2">参考价格</p><p className="text-white font-medium">{formatPrice(configuringModel.billingRule)}</p>{configuringModel.docUrl&&(<a href={configuringModel.docUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-anime-purple hover:underline mt-2">去官方获取 API Key<ExternalLinkIcon className="w-3 h-3"/></a>)}</div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">API Key</label>
+            <Input type="password" placeholder={editingKeyId ? "留空则不更新" : "sk-..."} value={apiKey} onChange={e=>setApiKey(e.target.value)}/>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Key 别名</label>
+            <Input placeholder="例如：我的主 Key" value={alias} onChange={e=>setAlias(e.target.value)}/>
+          </div>
+          <ParameterFields parameters={configuringModel.parameters}/>
+        </div>
+        {isError && (
+          <div className="p-3 rounded-lg bg-warm-orange/10 border border-warm-orange/30 text-warm-orange text-sm">
+            {(error as ApiError)?.response?.data?.message || "验证失败，请检查 API Key"}
+          </div>
+        )}
+        <Button
+          className="w-full gap-2"
+          onClick={handleSave}
+          disabled={(!editingKeyId && !apiKey.trim()) || isPending}
+          isLoading={isPending}
+        >
+          <CheckIcon className="w-4 h-4"/>
+          {isPending ? (editingKeyId ? "更新中..." : "验证中...") : (editingKeyId ? "更新配置" : "验证并保存")}
+        </Button>
+      </div></motion.div></motion.div>)}</AnimatePresence>
     </div>
   );
 }

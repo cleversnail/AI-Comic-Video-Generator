@@ -51,6 +51,18 @@ export class ModelsController {
     return this.modelsService.deleteApiKey(userId, id);
   }
 
+  @Put('api-keys/:id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '更新 API Key 配置' })
+  async updateApiKey(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: { apiKey?: string; alias?: string; isDefault?: boolean },
+  ) {
+    return this.modelsService.updateApiKey(userId, id, dto);
+  }
+
   @Post('preferences')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
