@@ -82,13 +82,11 @@ export function CharacterList({ projectId }: CharacterListProps) {
   return (
     <div className="flex h-full">
       {/* Character List */}
-      <motion.div
-        layout
-        className="flex-1 overflow-auto p-6"
-        animate={{
-          paddingRight: selectedCharacter ? "1rem" : "1.5rem",
+      <div
+        className="flex-1 overflow-auto p-6 transition-all duration-300 ease-in-out"
+        style={{
+          paddingRight: selectedCharacter ? '1rem' : '1.5rem',
         }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
       >
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -124,21 +122,18 @@ export function CharacterList({ projectId }: CharacterListProps) {
             <Button onClick={() => setShowCreateDialog(true)}>创建第一个角色</Button>
           </div>
         ) : (
-          <motion.div
-            layout
-            className="grid gap-4"
-            animate={{
+          <div
+            className="grid gap-4 transition-all duration-300 ease-in-out"
+            style={{
               gridTemplateColumns: selectedCharacter
-                ? "repeat(auto-fill, minmax(140px, 1fr))"
-                : "repeat(auto-fill, minmax(180px, 1fr))",
+                ? 'repeat(auto-fill, minmax(150px, 1fr))'
+                : 'repeat(auto-fill, minmax(180px, 1fr))',
             }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
           >
             {characters.map((character) => (
-              <motion.div
+              <div
                 key={character.id}
-                layout
-                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="transition-transform duration-300 ease-in-out"
               >
                 <CharacterCard
                   character={character}
@@ -147,11 +142,11 @@ export function CharacterList({ projectId }: CharacterListProps) {
                     selectedCharacter?.id === character.id ? null : character
                   )}
                 />
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Detail Panel */}
       <AnimatePresence mode="wait">
