@@ -80,14 +80,9 @@ export function CharacterList({ projectId }: CharacterListProps) {
   };
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full overflow-hidden">
       {/* Character List */}
-      <div
-        className="flex-1 overflow-auto p-6 transition-all duration-300 ease-in-out"
-        style={{
-          paddingRight: selectedCharacter ? '1rem' : '1.5rem',
-        }}
-      >
+      <div className="flex-1 overflow-auto p-6 min-w-0">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-display text-2xl font-bold text-white">角色管理</h2>
@@ -122,27 +117,16 @@ export function CharacterList({ projectId }: CharacterListProps) {
             <Button onClick={() => setShowCreateDialog(true)}>创建第一个角色</Button>
           </div>
         ) : (
-          <div
-            className="grid gap-4 transition-all duration-300 ease-in-out"
-            style={{
-              gridTemplateColumns: selectedCharacter
-                ? 'repeat(auto-fill, minmax(150px, 1fr))'
-                : 'repeat(auto-fill, minmax(180px, 1fr))',
-            }}
-          >
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {characters.map((character) => (
-              <div
+              <CharacterCard
                 key={character.id}
-                className="transition-transform duration-300 ease-in-out"
-              >
-                <CharacterCard
-                  character={character}
-                  isSelected={selectedCharacter?.id === character.id}
-                  onClick={() => setSelectedCharacter(
-                    selectedCharacter?.id === character.id ? null : character
-                  )}
-                />
-              </div>
+                character={character}
+                isSelected={selectedCharacter?.id === character.id}
+                onClick={() => setSelectedCharacter(
+                  selectedCharacter?.id === character.id ? null : character
+                )}
+              />
             ))}
           </div>
         )}
@@ -156,8 +140,8 @@ export function CharacterList({ projectId }: CharacterListProps) {
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 384, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="flex-shrink-0 overflow-hidden"
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="flex-shrink-0 overflow-hidden border-l border-divider"
           >
             <CharacterDetailPanel
               character={selectedCharacter}
