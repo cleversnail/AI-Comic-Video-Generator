@@ -133,12 +133,7 @@ export function CharacterDetailPanel({ character, projectId, onClose }: Characte
   ];
 
   return (
-    <motion.div
-      initial={{ x: 300, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: 300, opacity: 0 }}
-      className="w-96 flex-shrink-0 border-l border-divider bg-panel-deep overflow-hidden flex flex-col"
-    >
+    <div className="w-96 h-full border-l border-divider bg-panel-deep overflow-hidden flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-divider flex items-center justify-between">
         <h3 className="font-display text-lg font-semibold text-white">{character.name}</h3>
@@ -561,6 +556,6 @@ export function CharacterDetailPanel({ character, projectId, onClose }: Characte
           )}
         </AnimatePresence>
       </div>
-    </motion.div>
+    </div>
   );
 }

@@ -82,7 +82,14 @@ export function CharacterList({ projectId }: CharacterListProps) {
   return (
     <div className="flex h-full">
       {/* Character List */}
-      <div className="flex-1 overflow-auto p-6">
+      <motion.div
+        layout
+        className="flex-1 overflow-auto p-6"
+        animate={{
+          paddingRight: selectedCharacter ? "1rem" : "1.5rem",
+        }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+      >
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-display text-2xl font-bold text-white">角色管理</h2>
@@ -117,27 +124,52 @@ export function CharacterList({ projectId }: CharacterListProps) {
             <Button onClick={() => setShowCreateDialog(true)}>创建第一个角色</Button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <motion.div
+            layout
+            className="grid gap-4"
+            animate={{
+              gridTemplateColumns: selectedCharacter
+                ? "repeat(auto-fill, minmax(140px, 1fr))"
+                : "repeat(auto-fill, minmax(180px, 1fr))",
+            }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
             {characters.map((character) => (
-              <CharacterCard
+              <motion.div
                 key={character.id}
-                character={character}
-                isSelected={selectedCharacter?.id === character.id}
-                onClick={() => setSelectedCharacter(character)}
-              />
+                layout
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                <CharacterCard
+                  character={character}
+                  isSelected={selectedCharacter?.id === character.id}
+                  onClick={() => setSelectedCharacter(
+                    selectedCharacter?.id === character.id ? null : character
+                  )}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
 
       {/* Detail Panel */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {selectedCharacter && (
-          <CharacterDetailPanel
-            character={selectedCharacter}
-            projectId={projectId}
-            onClose={() => setSelectedCharacter(null)}
-          />
+          <motion.div
+            key={selectedCharacter.id}
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 384, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="flex-shrink-0 overflow-hidden"
+          >
+            <CharacterDetailPanel
+              character={selectedCharacter}
+              projectId={projectId}
+              onClose={() => setSelectedCharacter(null)}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
 
