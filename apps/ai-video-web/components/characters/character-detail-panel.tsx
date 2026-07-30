@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Character, CharacterVariant, VariantType, charactersApi } from "@/lib/api";
+import { useToast } from "@/components/ui/toast";
 
 interface CharacterDetailPanelProps {
   character: Character;
@@ -29,6 +30,7 @@ const viewLabels: Record<string, string> = {
 
 export function CharacterDetailPanel({ character, projectId, onClose }: CharacterDetailPanelProps) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<"info" | "views" | "variants" | "lock">("info");
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>("");
@@ -54,6 +56,11 @@ export function CharacterDetailPanel({ character, projectId, onClose }: Characte
     mutationFn: () => charactersApi.generateViews(projectId, character.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
+      toast.success("四视图生成成功");
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || error?.message || "请检查是否配置了图像生成模型的 API Key";
+      toast.error("四视图生成失败", message);
     },
   });
 
@@ -62,6 +69,7 @@ export function CharacterDetailPanel({ character, projectId, onClose }: Characte
     mutationFn: () => charactersApi.clearViews(projectId, character.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
+      toast.success("四视图已清除");
     },
   });
 
@@ -71,6 +79,11 @@ export function CharacterDetailPanel({ character, projectId, onClose }: Characte
       charactersApi.generateVariant(projectId, character.id, variantType),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
+      toast.success("变体生成成功");
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || error?.message || "请检查是否配置了图像生成模型的 API Key";
+      toast.error("变体生成失败", message);
     },
   });
 

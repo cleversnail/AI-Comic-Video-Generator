@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { WebSocketProvider } from "@/components/providers/websocket-provider";
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 const inter = Inter({
@@ -38,7 +39,9 @@ export default function RootLayout({
         className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased bg-cinema text-foreground`}
       >
         <QueryProvider>
-          <WebSocketProvider>{children}</WebSocketProvider>
+          <ToastProvider>
+            <WebSocketProvider>{children}</WebSocketProvider>
+          </ToastProvider>
         </QueryProvider>
       </body>
     </html>
