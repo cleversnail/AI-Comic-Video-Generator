@@ -22,6 +22,8 @@ model User {
   projects Project[]
   apiKeys  UserApiKey[]
   characterLibrary CharacterLibrary[]
+  templates        Template[]
+  templateFavorites TemplateFavorite[]
 
   @@map("users")
 }
@@ -46,6 +48,9 @@ model Project {
   tasks      GenerationTask[]
   preference ModelPreference?
   versions   ProjectVersion[]
+  template   Template?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  templateId String? @map("template_id")
 
   @@map("projects")
 }
@@ -270,4 +275,42 @@ model ProjectVersion {
 
   @@unique([projectId, version])
   @@map("project_versions")
+}
+
+model Template {
+  id          String   @id @default(uuid())
+  name        String
+  description String?  @db.Text
+  category    String   @default("general")
+  tags        Json?
+  coverUrl    String?  @map("cover_url")
+  isPublic    Boolean  @default(true) @map("is_public")
+  snapshot    Json     // 完整项目快照
+  usageCount  Int      @default(0) @map("usage_count")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  favorites TemplateFavorite[]
+  projects  Project[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("templates")
+}
+
+model TemplateFavorite {
+  id     String @id @default(uuid())
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  templateId String   @map("template_id")
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, templateId])
+  @@map("template_favorites")
 }

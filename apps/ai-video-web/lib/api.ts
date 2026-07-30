@@ -271,6 +271,28 @@ export interface Episode {
   updatedAt: string;
 }
 
+export interface Template {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  tags?: string[];
+  coverUrl?: string;
+  isPublic: boolean;
+  favoriteCount: number;
+  usageCount: number;
+  createdAt: string;
+}
+
+export interface CreateTemplateDto {
+  name: string;
+  description?: string;
+  category?: string;
+  tags?: string[];
+  coverUrl?: string;
+  isPublic?: boolean;
+}
+
 export const projectsApi = {
   listProjects: () => api.get<any>("/projects").then((r) => r.data.data),
   getProject: (id: string) => api.get<Project>(`/projects/${id}`).then((r) => r.data),
@@ -298,6 +320,28 @@ export const projectsApi = {
     api.put<{ data: Episode }>(`/projects/${id}/episodes/${episodeId}`, data).then((r) => r.data.data),
   deleteEpisode: (id: string, episodeId: string) =>
     api.delete(`/projects/${id}/episodes/${episodeId}`).then((r) => r.data),
+  // Template APIs
+  saveAsTemplate: (id: string, data: CreateTemplateDto) =>
+    api.post<{ data: Template }>(`/projects/${id}/save-as-template`, data).then((r) => r.data.data),
+};
+
+// ==================== Templates API ====================
+
+export const templatesApi = {
+  list: (category?: string, search?: string) =>
+    api.get<{ data: Template[] }>("/templates", { params: { category, search } }).then((r) => r.data.data),
+  get: (id: string) =>
+    api.get<{ data: Template }>(`/templates/${id}`).then((r) => r.data.data),
+  getFavorites: () =>
+    api.get<{ data: Template[] }>("/templates/favorites").then((r) => r.data.data),
+  clone: (id: string, projectName?: string) =>
+    api.post<{ data: Project }>(`/templates/${id}/clone`, { projectName }).then((r) => r.data.data),
+  toggleFavorite: (id: string) =>
+    api.post<{ data: { favorited: boolean } }>(`/templates/${id}/favorite`).then((r) => r.data.data),
+  update: (id: string, data: Partial<CreateTemplateDto>) =>
+    api.put<{ data: Template }>(`/templates/${id}`, data).then((r) => r.data.data),
+  delete: (id: string) =>
+    api.delete(`/templates/${id}`).then((r) => r.data),
 };
 
 // ==================== Characters API ====================

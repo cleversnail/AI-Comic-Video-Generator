@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Put, Patch, Body, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { VersionService } from './version.service';
 import { EpisodeService } from './episode.service';
+import { TemplateService, CreateTemplateDto } from './template.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -16,6 +17,7 @@ export class ProjectsController {
     private readonly projectsService: ProjectsService,
     private readonly versionService: VersionService,
     private readonly episodeService: EpisodeService,
+    private readonly templateService: TemplateService,
   ) {}
 
   @Get()
@@ -154,5 +156,79 @@ export class ProjectsController {
   @ApiOperation({ summary: '获取项目共享角色列表' })
   async getSharedCharacters(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.episodeService.getSharedCharacters(userId, id);
+  }
+
+  // ==================== Template Endpoints ====================
+
+  @Post(':id/save-as-template')
+  @ApiOperation({ summary: '将项目保存为模板' })
+  async saveAsTemplate(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: CreateTemplateDto,
+  ) {
+    return this.templateService.saveAsTemplate(userId, id, dto);
+  }
+}
+
+@ApiTags('模板市场')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('templates')
+export class TemplateController {
+  constructor(private readonly templateService: TemplateService) {}
+
+  @Get()
+  @ApiOperation({ summary: '获取模板列表' })
+  async listTemplates(
+    @CurrentUser('id') userId: string,
+    @Query('category') category?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.templateService.listTemplates(userId, category, search);
+  }
+
+  @Get('favorites')
+  @ApiOperation({ summary: '获取收藏的模板' })
+  async getFavorites(@CurrentUser('id') userId: string) {
+    return this.templateService.getFavorites(userId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: '获取模板详情' })
+  async getTemplate(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.templateService.getTemplate(userId, id);
+  }
+
+  @Post(':id/clone')
+  @ApiOperation({ summary: '从模板复刻项目' })
+  async cloneFromTemplate(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() body?: { projectName?: string },
+  ) {
+    return this.templateService.cloneFromTemplate(userId, id, body?.projectName);
+  }
+
+  @Post(':id/favorite')
+  @ApiOperation({ summary: '收藏/取消收藏模板' })
+  async toggleFavorite(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.templateService.toggleFavorite(userId, id);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: '更新模板' })
+  async updateTemplate(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateTemplateDto>,
+  ) {
+    return this.templateService.updateTemplate(userId, id, dto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: '删除模板' })
+  async deleteTemplate(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.templateService.deleteTemplate(userId, id);
   }
 }
