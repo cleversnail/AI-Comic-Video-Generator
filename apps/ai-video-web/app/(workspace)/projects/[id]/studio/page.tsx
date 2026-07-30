@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { PlayIcon, ImageIcon, WandIcon } from "@/components/icons";
-import { projectsApi, storyboardApi, Shot } from "@/lib/api";
+import { projectsApi, storyboardApi, modelsApi, Shot } from "@/lib/api";
 import Link from "next/link";
 import { BackButton } from "@/components/navigation/back-button";
 import { CharacterList } from "@/components/characters/character-list";
@@ -26,6 +26,9 @@ const tabs = [
   { id: "timeline", label: "时间轴" },
 ];
 
+// 本地存储 key
+const STORAGE_KEY_PREFIX = "studio_draft_";
+
 export default function StudioPage() {
   const params = useParams();
   const projectId = params.id as string;
@@ -37,6 +40,43 @@ export default function StudioPage() {
   const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
   const [showReader, setShowReader] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
+
+  // 恢复本地存储的草稿
+  useEffect(() => {
+    const storageKey = STORAGE_KEY_PREFIX + projectId;
+    const savedDraft = localStorage.getItem(storageKey);
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        if (draft.prompt) setPrompt(draft.prompt);
+        if (draft.selectedCharacterIds) setSelectedCharacterIds(draft.selectedCharacterIds);
+        if (draft.activeTab) setActiveTab(draft.activeTab);
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+  }, [projectId]);
+
+  // 保存草稿到本地存储
+  useEffect(() => {
+    const storageKey = STORAGE_KEY_PREFIX + projectId;
+    const draft = {
+      prompt,
+      selectedCharacterIds,
+      activeTab,
+      savedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(storageKey, JSON.stringify(draft));
+  }, [projectId, prompt, selectedCharacterIds, activeTab]);
+
+  // 获取 API Key 状态
+  const { data: apiKeys = [] } = useQuery({
+    queryKey: ["apiKeys"],
+    queryFn: () => modelsApi.listMyApiKeys(),
+  });
+
+  const hasLlmKey = apiKeys.some((k: any) => k.capability === "llm");
+  const hasImageKey = apiKeys.some((k: any) => k.capability === "image");
 
   const { data: project } = useQuery({
     queryKey: ["project", projectId],
@@ -115,6 +155,17 @@ export default function StudioPage() {
               {project.status === "draft" ? "草稿" : "进行中"}
             </Badge>
           )}
+          {/* 模型状态指示器 */}
+          <Link href="/settings/models">
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs cursor-pointer transition-colors ${
+              hasLlmKey && hasImageKey
+                ? "bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                : "bg-warm-orange/10 text-warm-orange hover:bg-warm-orange/20"
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${hasLlmKey && hasImageKey ? "bg-green-400" : "bg-warm-orange"}`} />
+              <span>{hasLlmKey && hasImageKey ? "模型已配置" : "配置模型"}</span>
+            </div>
+          </Link>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowVersions(true)}>
@@ -166,6 +217,30 @@ export default function StudioPage() {
           {activeTab === "story" && (
             <div className="p-6 max-w-3xl">
               <h2 className="font-display text-2xl font-bold text-white mb-6">故事编排</h2>
+
+              {/* 模型配置提示 */}
+              {!hasLlmKey && (
+                <div className="mb-4 p-4 rounded-xl bg-warm-orange/10 border border-warm-orange/20">
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg">⚠️</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-warm-orange mb-1">需要配置 AI 模型</p>
+                      <p className="text-xs text-text-secondary mb-3">
+                        生成分镜需要配置大语言模型（如 DeepSeek）的 API Key
+                      </p>
+                      <Link href="/settings/models">
+                        <Button size="sm" variant="outline" className="gap-2">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" />
+                          </svg>
+                          去配置模型
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <Textarea
                 placeholder="输入你的故事或剧情描述..."
                 value={prompt}
@@ -182,7 +257,7 @@ export default function StudioPage() {
               <Button
                 onClick={handleGenerateStoryboard}
                 isLoading={generateMutation.isPending}
-                disabled={!prompt.trim()}
+                disabled={!prompt.trim() || !hasLlmKey}
                 className="gap-2"
               >
                 <SparklesIcon className="w-4 h-4" />

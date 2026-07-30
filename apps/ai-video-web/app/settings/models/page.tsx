@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ function ParameterFields({ parameters }: { parameters?: ModelParameter[] }) {
 }
 
 export default function ModelsPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [selectedCapability, setSelectedCapability] = useState("all");
   const [configuringModel, setConfiguringModel] = useState<AIModel|null>(null);
@@ -34,7 +36,73 @@ export default function ModelsPage() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex items-start justify-between mb-8"><div><h1 className="font-display text-3xl font-bold text-white mb-1">模型中心</h1><p className="text-text-secondary">选择 AI 模型并配置 API Key，所有配置会在创作流程中直接可用</p></div><Button variant="outline" className="gap-2"><SparklesIcon className="w-4 h-4"/>推荐组合</Button></div>
+      {/* Header with back button */}
+      <div className="flex items-center gap-4 mb-6">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-panel-mid border border-divider text-text-secondary hover:text-white hover:border-anime-purple/50 transition-colors"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          返回
+        </button>
+        <div className="flex-1">
+          <h1 className="font-display text-3xl font-bold text-white mb-1">模型中心</h1>
+          <p className="text-text-secondary">选择 AI 模型并配置 API Key，所有配置会在创作流程中直接可用</p>
+        </div>
+        <Button variant="outline" className="gap-2"><SparklesIcon className="w-4 h-4"/>推荐组合</Button>
+      </div>
+
+      {/* Model Usage Guide */}
+      <div className="mb-8 p-6 rounded-xl bg-gradient-to-br from-anime-purple/5 to-panel-mid border border-divider">
+        <h3 className="font-display text-lg font-bold text-white mb-4">🎯 功能与模型对照</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 rounded-lg bg-panel-deep border border-divider">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">📝</span>
+              <h4 className="text-sm font-medium text-white">生成分镜 / 创作助手</h4>
+            </div>
+            <p className="text-xs text-text-secondary mb-2">需要配置<strong className="text-anime-purple">大语言模型</strong></p>
+            <div className="flex flex-wrap gap-1">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">DeepSeek</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">Kimi</span>
+            </div>
+          </div>
+          <div className="p-4 rounded-lg bg-panel-deep border border-divider">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🎨</span>
+              <h4 className="text-sm font-medium text-white">生成预览图 / 四视图</h4>
+            </div>
+            <p className="text-xs text-text-secondary mb-2">需要配置<strong className="text-anime-purple">图像生成模型</strong></p>
+            <div className="flex flex-wrap gap-1">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">FLUX</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">可灵</span>
+            </div>
+          </div>
+          <div className="p-4 rounded-lg bg-panel-deep border border-divider">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🔊</span>
+              <h4 className="text-sm font-medium text-white">TTS 配音</h4>
+            </div>
+            <p className="text-xs text-text-secondary mb-2">需要配置<strong className="text-anime-purple">语音合成模型</strong></p>
+            <div className="flex flex-wrap gap-1">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">MiniMax TTS</span>
+            </div>
+          </div>
+          <div className="p-4 rounded-lg bg-panel-deep border border-divider">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🎬</span>
+              <h4 className="text-sm font-medium text-white">生成视频</h4>
+            </div>
+            <p className="text-xs text-text-secondary mb-2">需要配置<strong className="text-anime-purple">视频生成模型</strong></p>
+            <div className="flex flex-wrap gap-1">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400">可灵视频</span>
+            </div>
+          </div>
+        </div>
+        <p className="text-xs text-text-disabled mt-4">💡 建议至少配置一个大语言模型和一个图像生成模型，即可使用核心功能</p>
+      </div>
 
       {/* Cost Overview */}
       <div className="mb-8">
