@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { LLMAdapter, ImageAdapter, VideoAdapter, TTSAdapter, BaseAdapter } from './index';
 import { DeepSeekAdapter } from '../../modules/models/adapters/deepseek.adapter';
 import { FluxAdapter } from '../../modules/models/adapters/flux.adapter';
@@ -15,7 +15,11 @@ interface AdapterEntry {
 
 @Injectable()
 export class AdapterFactory {
+  private readonly logger = new Logger(AdapterFactory.name);
   private readonly adapters: Map<string, AdapterEntry> = new Map();
+
+  // 默认 Adapter（按 capability）
+  private readonly defaultAdapters: Map<CapabilityType, BaseAdapter>;
 
   constructor(
     private readonly deepSeekAdapter: DeepSeekAdapter,
@@ -24,28 +28,52 @@ export class AdapterFactory {
     private readonly klingVideoAdapter: KlingVideoAdapter,
     private readonly minimaxTTSAdapter: MiniMaxTTSAdapter,
   ) {
+    // 注册默认模型
     this.register('deepseek-v3', deepSeekAdapter, 'llm');
+    this.register('deepseek-chat', deepSeekAdapter, 'llm');
+    this.register('deepseek-r1', deepSeekAdapter, 'llm');
     this.register('flux', fluxAdapter, 'image');
+    this.register('flux-1', fluxAdapter, 'image');
     this.register('kling-image', klingImageAdapter, 'image');
     this.register('kling-pro', klingVideoAdapter, 'video');
+    this.register('kling-video', klingVideoAdapter, 'video');
     this.register('minimax-tts', minimaxTTSAdapter, 'tts');
+
+    // 设置默认 Adapter（当用户自定义模型 ID 未注册时，按 capability 使用默认 Adapter）
+    this.defaultAdapters = new Map<CapabilityType, BaseAdapter>();
+    this.defaultAdapters.set('llm', deepSeekAdapter);
+    this.defaultAdapters.set('image', fluxAdapter);
+    this.defaultAdapters.set('video', klingVideoAdapter);
+    this.defaultAdapters.set('tts', minimaxTTSAdapter);
   }
 
   private register(modelId: string, adapter: BaseAdapter, capability: CapabilityType) {
     this.adapters.set(modelId, { adapter, capability });
   }
 
+  /**
+   * 获取 Adapter（支持自定义模型 ID）
+   * 优先查找注册表，如果未找到则根据 capability 返回默认 Adapter
+   */
   getAdapter<T extends BaseAdapter>(capability: CapabilityType, modelId: string): T {
+    // 1. 优先查找注册表
     const entry = this.adapters.get(modelId);
-    if (!entry) {
-      throw new Error(`No adapter found for model ${modelId} with capability ${capability}`);
+    if (entry) {
+      if (entry.capability !== capability) {
+        throw new Error(
+          `Adapter for model ${modelId} has capability ${entry.capability}, but ${capability} was requested`,
+        );
+      }
+      return entry.adapter as T;
     }
-    if (entry.capability !== capability) {
-      throw new Error(
-        `Adapter for model ${modelId} has capability ${entry.capability}, but ${capability} was requested`,
-      );
+
+    // 2. 未找到注册的模型，根据 capability 返回默认 Adapter
+    this.logger.warn(`Model ${modelId} not registered, using default ${capability} adapter`);
+    const defaultAdapter = this.defaultAdapters.get(capability);
+    if (!defaultAdapter) {
+      throw new Error(`No default adapter found for capability ${capability}`);
     }
-    return entry.adapter as T;
+    return defaultAdapter as T;
   }
 
   getLLMAdapter(modelId: string): LLMAdapter {
