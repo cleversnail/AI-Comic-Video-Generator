@@ -538,6 +538,35 @@ export interface DistributeConfig {
   coverUrl?: string;
 }
 
+export enum Viseme {
+  SIL = 0, PP = 1, FF = 2, TH = 3, DD = 4, kk = 5,
+  CH = 6, SS = 7, nn = 8, RR = 9, aa = 10, E = 11,
+  ih = 12, oh = 13, ou = 14,
+}
+
+export interface VisemeFrame {
+  time: number;
+  viseme: Viseme;
+  weight: number;
+}
+
+export interface LipSyncTrack {
+  duration: number;
+  frames: VisemeFrame[];
+  metadata: {
+    language: string;
+    model: string;
+    generatedAt: string;
+  };
+}
+
+export interface LipSyncConfig {
+  language?: 'zh' | 'en' | 'ja';
+  intensity?: number;
+  smoothness?: number;
+  autoCorrectDrift?: boolean;
+}
+
 export const composeApi = {
   composeProject: (projectId: string) =>
     api.post<{ data: ComposeResult }>(`/projects/${projectId}/compose`).then((r) => r.data.data),
@@ -555,6 +584,15 @@ export const composeApi = {
     api.post<{ data: { totalPlatforms: number; validPlatforms: number; allValid: boolean; results: Array<{ platformId: string; platformName: string; config: DistributeConfig; validation: { valid: boolean; errors: string[] } }> } }>(
       `/projects/${projectId}/compose/distribute/export`, configs
     ).then((r) => r.data.data),
+  // Lip Sync APIs
+  generateLipSync: (projectId: string, shotId: string, config?: LipSyncConfig) =>
+    api.post<{ data: LipSyncTrack }>(`/projects/${projectId}/compose/shots/${shotId}/lip-sync`, config).then((r) => r.data.data),
+  generateLipSyncFromText: (projectId: string, data: { text: string; duration: number; config?: LipSyncConfig }) =>
+    api.post<{ data: LipSyncTrack }>(`/projects/${projectId}/compose/lip-sync/generate`, data).then((r) => r.data.data),
+  smoothLipSync: (projectId: string, track: LipSyncTrack, windowSize?: number) =>
+    api.post<{ data: LipSyncTrack }>(`/projects/${projectId}/compose/lip-sync/smooth`, { track, windowSize }).then((r) => r.data.data),
+  correctLipSyncDrift: (projectId: string, track: LipSyncTrack, audioDuration: number) =>
+    api.post<{ data: LipSyncTrack }>(`/projects/${projectId}/compose/lip-sync/correct-drift`, { track, audioDuration }).then((r) => r.data.data),
 };
 
 export default api;

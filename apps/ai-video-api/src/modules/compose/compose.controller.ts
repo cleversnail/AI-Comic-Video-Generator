@@ -2,6 +2,7 @@ import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ComposeService } from './compose.service';
 import { DistributeService, DistributeConfig } from './distribute.service';
+import { LipSyncService, LipSyncConfig } from './lip-sync.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 
@@ -13,6 +14,7 @@ export class ComposeController {
   constructor(
     private readonly composeService: ComposeService,
     private readonly distributeService: DistributeService,
+    private readonly lipSyncService: LipSyncService,
   ) {}
 
   @Post()
@@ -59,5 +61,44 @@ export class ComposeController {
     @Body() configs: DistributeConfig[],
   ) {
     return this.distributeService.exportDistributePackages(userId, projectId, configs);
+  }
+
+  // ==================== Lip Sync Endpoints ====================
+
+  @Post('shots/:shotId/lip-sync')
+  @ApiOperation({ summary: '为分镜生成口型同步轨道' })
+  async generateLipSync(
+    @Param('shotId') shotId: string,
+    @Body() config?: LipSyncConfig,
+  ) {
+    const track = await this.lipSyncService.generateForShot(shotId, config);
+    return { data: track };
+  }
+
+  @Post('lip-sync/generate')
+  @ApiOperation({ summary: '从文本生成口型同步轨道' })
+  async generateLipSyncFromText(
+    @Body() body: { text: string; duration: number; config?: LipSyncConfig },
+  ) {
+    const track = this.lipSyncService.generateVisemeFromText(body.text, body.duration, body.config);
+    return { data: track };
+  }
+
+  @Post('lip-sync/smooth')
+  @ApiOperation({ summary: '平滑口型同步轨道' })
+  async smoothLipSync(
+    @Body() body: { track: any; windowSize?: number },
+  ) {
+    const smoothed = this.lipSyncService.smoothTrack(body.track, body.windowSize);
+    return { data: smoothed };
+  }
+
+  @Post('lip-sync/correct-drift')
+  @ApiOperation({ summary: '校正口型同步漂移' })
+  async correctDrift(
+    @Body() body: { track: any; audioDuration: number },
+  ) {
+    const corrected = this.lipSyncService.correctDrift(body.track, body.audioDuration);
+    return { data: corrected };
   }
 }
