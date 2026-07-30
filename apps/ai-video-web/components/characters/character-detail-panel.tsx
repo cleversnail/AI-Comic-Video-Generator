@@ -28,12 +28,21 @@ const viewLabels: Record<string, string> = {
   back: "背面",
 };
 
-export function CharacterDetailPanel({ character, projectId, onClose }: CharacterDetailPanelProps) {
+export function CharacterDetailPanel({ character: initialCharacter, projectId, onClose }: CharacterDetailPanelProps) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<"info" | "views" | "variants" | "lock">("info");
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>("");
+
+  // 从 React Query 缓存中获取最新的 character 数据
+  const { data: characters = [] } = useQuery({
+    queryKey: ["characters", projectId],
+    queryFn: () => charactersApi.listCharacters(projectId),
+  });
+
+  // 使用缓存中的最新数据，如果没有则使用初始 prop
+  const character = characters.find((c) => c.id === initialCharacter.id) || initialCharacter;
 
   // Fetch variant types
   const { data: variantTypes = [] } = useQuery({
