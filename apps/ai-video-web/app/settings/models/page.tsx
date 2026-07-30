@@ -74,8 +74,8 @@ export default function ModelsPage() {
   const recommendedModels: Record<string, Array<{id: string; name: string; desc: string}>> = {
     // DeepSeek 官方模型（https://platform.deepseek.com/api-docs）
     deepseek: [
-      { id: "deepseek-chat", name: "DeepSeek Chat", desc: "通用对话模型，性价比高" },
-      { id: "deepseek-reasoner", name: "DeepSeek R1", desc: "推理模型，适合复杂逻辑" },
+      { id: "deepseek-chat", name: "DeepSeek-V3", desc: "通用对话模型，性价比高" },
+      { id: "deepseek-reasoner", name: "DeepSeek-R1", desc: "推理模型，适合复杂逻辑" },
     ],
     // OpenAI 模型
     openai: [
@@ -185,8 +185,8 @@ export default function ModelsPage() {
             </div>
             <p className="text-xs text-text-secondary mb-2">需要配置<strong className="text-anime-purple">大语言模型</strong></p>
             <div className="flex flex-wrap gap-1">
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">DeepSeek</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">Kimi</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">DeepSeek-V3</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">DeepSeek-R1</span>
             </div>
           </div>
           <div className="p-4 rounded-lg bg-panel-deep border border-divider">

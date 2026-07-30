@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 const models = [
   {
     id: 'deepseek-v3',
-    name: 'DeepSeek',
+    name: 'DeepSeek-V3',
     provider: 'DeepSeek',
     capability: 'llm',
     description: '深度求索出品的大语言模型，中文理解能力强，成本低，适合剧情润色、分镜拆分、提示词优化。',
