@@ -397,7 +397,31 @@ export const storyboardApi = {
     ).then((r) => r.data.data),
   auditScript: (projectId: string) =>
     api.post<{ data: AuditResult }>(`/projects/${projectId}/storyboard/audit`).then((r) => r.data.data),
+  previewNovelSplit: (projectId: string, data: { text: string; config?: NovelSplitConfig }) =>
+    api.post<{ data: NovelSplitPreview }>(`/projects/${projectId}/storyboard/novel/preview`, data).then((r) => r.data.data),
+  executeNovelSplit: (projectId: string, data: { text: string; config?: NovelSplitConfig }) =>
+    api.post<{ data: { totalEpisodes: number; episodes: any[] } }>(`/projects/${projectId}/storyboard/novel/split`, data).then((r) => r.data.data),
 };
+
+export interface NovelSplitConfig {
+  targetDuration?: number;
+  targetEpisodes?: number;
+  splitByChapter?: boolean;
+  chapterPattern?: string;
+}
+
+export interface NovelSplitPreview {
+  totalEpisodes: number;
+  episodes: Array<{
+    number: number;
+    title: string;
+    content: string;
+    estimatedDuration: number;
+    wordCount: number;
+  }>;
+  totalWords: number;
+  averageWordsPerEpisode: number;
+}
 
 // ==================== Generations API ====================
 

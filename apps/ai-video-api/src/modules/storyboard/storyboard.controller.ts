@@ -4,6 +4,7 @@ import { StoryboardService } from './storyboard.service';
 import { StoryboardPreviewService } from './storyboard-preview.service';
 import { StoryboardTtsService } from './storyboard-tts.service';
 import { ScriptAuditService } from './script-audit.service';
+import { NovelSplitService, SplitConfig } from './novel-split.service';
 import { GenerateShotsDto } from './dto/generate-shots.dto';
 import { GeneratePreviewDto } from './dto/generate-preview.dto';
 import { UpdateShotDto } from './dto/update-shot.dto';
@@ -25,6 +26,7 @@ export class StoryboardController {
     private readonly previewService: StoryboardPreviewService,
     private readonly ttsService: StoryboardTtsService,
     private readonly scriptAuditService: ScriptAuditService,
+    private readonly novelSplitService: NovelSplitService,
     private readonly modelsService: ModelsService,
     private readonly prisma: PrismaService,
     private readonly adapterFactory: AdapterFactory,
@@ -166,5 +168,27 @@ ${contextParts.join('\n')}
     @Param('projectId') projectId: string,
   ) {
     return this.scriptAuditService.auditProject(userId, projectId);
+  }
+
+  // ==================== Novel Split Endpoints ====================
+
+  @Post('novel/preview')
+  @ApiOperation({ summary: '预览长篇小说分集结果' })
+  async previewNovelSplit(
+    @CurrentUser('id') userId: string,
+    @Param('projectId') projectId: string,
+    @Body() body: { text: string; config?: SplitConfig },
+  ) {
+    return this.novelSplitService.previewSplit(userId, projectId, body.text, body.config || {});
+  }
+
+  @Post('novel/split')
+  @ApiOperation({ summary: '执行长篇小说分集' })
+  async executeNovelSplit(
+    @CurrentUser('id') userId: string,
+    @Param('projectId') projectId: string,
+    @Body() body: { text: string; config?: SplitConfig },
+  ) {
+    return this.novelSplitService.executeSplit(userId, projectId, body.text, body.config || {});
   }
 }
