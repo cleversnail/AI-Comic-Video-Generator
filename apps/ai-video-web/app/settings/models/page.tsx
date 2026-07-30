@@ -70,35 +70,67 @@ export default function ModelsPage() {
   const isError = editingKeyId ? updateKeyMutation.isError : createKeyMutation.isError;
   const error = editingKeyId ? updateKeyMutation.error : createKeyMutation.error;
 
-  // 各能力推荐的模型列表
+  // 各能力推荐的模型列表（按提供商分组）
   const recommendedModels: Record<string, Array<{id: string; name: string; desc: string}>> = {
-    llm: [
-      { id: "deepseek-chat", name: "DeepSeek Chat", desc: "DeepSeek 最新对话模型" },
-      { id: "deepseek-reasoner", name: "DeepSeek R1", desc: "DeepSeek 推理模型" },
-      { id: "gpt-4o", name: "GPT-4o", desc: "OpenAI 多模态模型" },
-      { id: "gpt-4o-mini", name: "GPT-4o Mini", desc: "OpenAI 轻量模型" },
-      { id: "claude-3-5-sonnet", name: "Claude 3.5 Sonnet", desc: "Anthropic 高性能模型" },
-      { id: "claude-3-haiku", name: "Claude 3 Haiku", desc: "Anthropic 快速模型" },
+    // DeepSeek 官方模型（https://platform.deepseek.com/api-docs）
+    deepseek: [
+      { id: "deepseek-chat", name: "DeepSeek Chat", desc: "通用对话模型，性价比高" },
+      { id: "deepseek-reasoner", name: "DeepSeek R1", desc: "推理模型，适合复杂逻辑" },
+    ],
+    // OpenAI 模型
+    openai: [
+      { id: "gpt-4o", name: "GPT-4o", desc: "多模态模型" },
+      { id: "gpt-4o-mini", name: "GPT-4o Mini", desc: "轻量快速模型" },
+      { id: "dall-e-3", name: "DALL-E 3", desc: "图像生成" },
+      { id: "tts-1", name: "TTS-1", desc: "语音合成" },
+    ],
+    // Anthropic 模型
+    anthropic: [
+      { id: "claude-3-5-sonnet", name: "Claude 3.5 Sonnet", desc: "高性能模型" },
+      { id: "claude-3-haiku", name: "Claude 3 Haiku", desc: "快速模型" },
+    ],
+    // 其他 LLM
+    other_llm: [
       { id: "qwen-turbo", name: "通义千问 Turbo", desc: "阿里云快速模型" },
       { id: "glm-4", name: "GLM-4", desc: "智谱 AI 对话模型" },
       { id: "kimi", name: "Kimi", desc: "Moonshot 长文本模型" },
     ],
+    // 图像模型
     image: [
-      { id: "flux", name: "FLUX.1", desc: "Black Forest Labs 图像生成" },
-      { id: "dall-e-3", name: "DALL-E 3", desc: "OpenAI 图像生成" },
+      { id: "flux", name: "FLUX.1", desc: "Black Forest Labs" },
       { id: "stable-diffusion-xl", name: "Stable Diffusion XL", desc: "开源图像生成" },
-      { id: "midjourney", name: "Midjourney", desc: "高质量图像生成" },
     ],
+    // 语音模型
     tts: [
       { id: "minimax-tts", name: "MiniMax TTS", desc: "中文语音合成" },
       { id: "elevenlabs", name: "ElevenLabs", desc: "高质量语音合成" },
-      { id: "openai-tts", name: "OpenAI TTS", desc: "OpenAI 语音合成" },
     ],
+    // 视频模型
     video: [
       { id: "kling-video", name: "可灵视频", desc: "快手视频生成" },
       { id: "runway-gen-3", name: "Runway Gen-3", desc: "Runway 视频生成" },
       { id: "pika", name: "Pika", desc: "Pika 视频生成" },
     ],
+  };
+
+  // 根据当前配置的模型获取推荐列表
+  const getRecommendedModels = (model: AIModel | null) => {
+    if (!model) return [];
+
+    // 根据模型 provider 和 capability 返回对应的推荐列表
+    const provider = model.provider?.toLowerCase() || '';
+    const capability = model.capability || '';
+
+    if (provider.includes('deepseek')) return recommendedModels.deepseek;
+    if (provider.includes('openai')) return recommendedModels.openai;
+    if (provider.includes('anthropic') || provider.includes('claude')) return recommendedModels.anthropic;
+    if (capability === 'image') return recommendedModels.image;
+    if (capability === 'tts') return recommendedModels.tts;
+    if (capability === 'video') return recommendedModels.video;
+
+    // 默认返回对应能力的推荐
+    if (capability === 'llm') return recommendedModels.other_llm;
+    return [];
   };
 
   const handleModelSelect = (modelId: string, modelName: string) => {
@@ -212,12 +244,12 @@ export default function ModelsPage() {
                 className="w-full h-10 rounded-lg border border-divider bg-panel-deep px-3 text-sm text-white"
                 value={customModelName}
                 onChange={(e) => {
-                  const selected = recommendedModels[configuringModel.capability]?.find(m => m.id === e.target.value);
+                  const selected = getRecommendedModels(configuringModel)?.find(m => m.id === e.target.value);
                   if (selected) handleModelSelect(selected.id, selected.name);
                 }}
               >
                 <option value="">-- 选择推荐模型 --</option>
-                {(recommendedModels[configuringModel.capability] || []).map((m) => (
+                {getRecommendedModels(configuringModel).map((m) => (
                   <option key={m.id} value={m.id}>{m.name} - {m.desc}</option>
                 ))}
               </select>

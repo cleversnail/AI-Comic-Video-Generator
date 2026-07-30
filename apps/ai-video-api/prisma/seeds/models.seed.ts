@@ -5,12 +5,12 @@ const prisma = new PrismaClient();
 const models = [
   {
     id: 'deepseek-v3',
-    name: 'DeepSeek-V3',
+    name: 'DeepSeek',
     provider: 'DeepSeek',
     capability: 'llm',
     description: '深度求索出品的大语言模型，中文理解能力强，成本低，适合剧情润色、分镜拆分、提示词优化。',
-    docUrl: 'https://platform.deepseek.com/api_docs/',
-    pricingUrl: 'https://platform.deepseek.com/api_docs/pricing/',
+    docUrl: 'https://platform.deepseek.com/api-docs',
+    pricingUrl: 'https://platform.deepseek.com/api-docs/pricing',
     apiBaseUrl: 'https://api.deepseek.com',
     parameters: [
       { key: 'temperature', name: '温度', type: 'number', defaultValue: 0.7, min: 0, max: 2 },
