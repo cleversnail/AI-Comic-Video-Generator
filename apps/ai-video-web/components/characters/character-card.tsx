@@ -15,11 +15,17 @@ const lockLevelConfig = {
   strict: { label: "严格", color: "bg-red-500/20 text-red-400", description: "高度一致" },
 };
 
+const viewLabels: Record<string, string> = {
+  front: "正",
+  three_quarter: "侧",
+  side: "侧",
+  back: "背",
+};
+
 export function CharacterCard({ character, isSelected, onClick }: CharacterCardProps) {
   const lockConfig = lockLevelConfig[character.lockLevel || "medium"];
-  const viewCount = character.viewImages
-    ? Object.values(character.viewImages).filter(Boolean).length
-    : 0;
+  const viewImages = character.viewImages || {};
+  const hasViews = Object.values(viewImages).some(Boolean);
   const variantCount = character.variants?.length || 0;
 
   return (
@@ -35,15 +41,36 @@ export function CharacterCard({ character, isSelected, onClick }: CharacterCardP
       }`}
       onClick={onClick}
     >
-      {/* Character Image */}
+      {/* Character Image / Views Grid */}
       <div className="aspect-square bg-gradient-to-br from-anime-purple/10 to-panel-mid relative">
-        {character.mainImage ? (
+        {hasViews ? (
+          // Show 4-view grid when views exist
+          <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-0.5">
+            {["front", "three_quarter", "side", "back"].map((viewKey) => (
+              <div key={viewKey} className="relative overflow-hidden bg-panel-deep">
+                {viewImages[viewKey as keyof typeof viewImages] ? (
+                  <img
+                    src={viewImages[viewKey as keyof typeof viewImages]}
+                    alt={viewLabels[viewKey]}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-[10px] text-text-disabled">{viewLabels[viewKey]}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : character.mainImage ? (
+          // Show main image if no views
           <img
             src={character.mainImage}
             alt={character.name}
             className="w-full h-full object-cover"
           />
         ) : (
+          // Show placeholder icon
           <div className="w-full h-full flex items-center justify-center">
             <svg
               className="w-16 h-16 text-text-disabled"
@@ -67,14 +94,14 @@ export function CharacterCard({ character, isSelected, onClick }: CharacterCardP
 
         {/* Stats Badges */}
         <div className="absolute bottom-2 left-2 flex gap-1">
-          {viewCount > 0 && (
-            <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">
-              {viewCount} 视图
+          {hasViews && (
+            <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 backdrop-blur-sm">
+              4视图
             </span>
           )}
           {variantCount > 0 && (
-            <span className="text-[10px] px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">
-              {variantCount} 变体
+            <span className="text-[10px] px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 backdrop-blur-sm">
+              {variantCount}变体
             </span>
           )}
         </div>

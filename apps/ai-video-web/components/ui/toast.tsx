@@ -39,14 +39,27 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((toast: Omit<Toast, "id">) => {
+    // Deduplicate: prevent same toast from appearing multiple times in quick succession
+    const key = `${toast.type}-${toast.title}`;
+    setToasts((prev) => {
+      const existing = prev.find((t) => `${t.type}-${t.title}` === key);
+      if (existing) return prev; // Skip duplicate
+      return prev;
+    });
+
     const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
     const newToast = { ...toast, id };
-    setToasts((prev) => [...prev, newToast]);
+    setToasts((prev) => {
+      // Double check for duplicates
+      const existing = prev.find((t) => `${t.type}-${t.title}` === key);
+      if (existing) return prev;
+      return [...prev, newToast];
+    });
 
     // Auto remove after duration
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, toast.duration || 4000);
+    }, toast.duration || 3000);
   }, []);
 
   const contextValue: ToastContextType = {
