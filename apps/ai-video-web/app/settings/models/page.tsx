@@ -27,12 +27,49 @@ export default function ModelsPage() {
   const [configuringModel, setConfiguringModel] = useState<AIModel|null>(null);
   const [apiKey, setApiKey] = useState("");
   const [alias, setAlias] = useState("");
+  const [customModelName, setCustomModelName] = useState("");
   const { data: models=[], isLoading: modelsLoading } = useQuery({ queryKey: ["models",selectedCapability], queryFn: ()=>modelsApi.listModels(selectedCapability==="all"?undefined:selectedCapability) });
   const { data: apiKeys=[], isLoading: keysLoading } = useQuery({ queryKey: ["apiKeys"], queryFn: ()=>modelsApi.listMyApiKeys() });
-  const createKeyMutation = useMutation({ mutationFn: modelsApi.createApiKey, onSuccess: ()=>{ queryClient.invalidateQueries({ queryKey: ["apiKeys"] }); setConfiguringModel(null); setApiKey(""); setAlias(""); } });
+  const createKeyMutation = useMutation({ mutationFn: modelsApi.createApiKey, onSuccess: ()=>{ queryClient.invalidateQueries({ queryKey: ["apiKeys"] }); setConfiguringModel(null); setApiKey(""); setAlias(""); setCustomModelName(""); } });
   const deleteKeyMutation = useMutation({ mutationFn: modelsApi.deleteApiKey, onSuccess: ()=>{ queryClient.invalidateQueries({ queryKey: ["apiKeys"] }); } });
   const handleSave = () => { if (!configuringModel||!apiKey.trim()) return; createKeyMutation.mutate({ modelId: configuringModel.id, apiKey: apiKey.trim(), alias: alias.trim()||`${configuringModel.name} Key`, isDefault: true }); };
   const isLoading = modelsLoading||keysLoading;
+
+  // 各能力推荐的模型列表
+  const recommendedModels: Record<string, Array<{id: string; name: string; desc: string}>> = {
+    llm: [
+      { id: "deepseek-chat", name: "DeepSeek Chat", desc: "DeepSeek 最新对话模型" },
+      { id: "deepseek-reasoner", name: "DeepSeek R1", desc: "DeepSeek 推理模型" },
+      { id: "gpt-4o", name: "GPT-4o", desc: "OpenAI 多模态模型" },
+      { id: "gpt-4o-mini", name: "GPT-4o Mini", desc: "OpenAI 轻量模型" },
+      { id: "claude-3-5-sonnet", name: "Claude 3.5 Sonnet", desc: "Anthropic 高性能模型" },
+      { id: "claude-3-haiku", name: "Claude 3 Haiku", desc: "Anthropic 快速模型" },
+      { id: "qwen-turbo", name: "通义千问 Turbo", desc: "阿里云快速模型" },
+      { id: "glm-4", name: "GLM-4", desc: "智谱 AI 对话模型" },
+      { id: "kimi", name: "Kimi", desc: "Moonshot 长文本模型" },
+    ],
+    image: [
+      { id: "flux", name: "FLUX.1", desc: "Black Forest Labs 图像生成" },
+      { id: "dall-e-3", name: "DALL-E 3", desc: "OpenAI 图像生成" },
+      { id: "stable-diffusion-xl", name: "Stable Diffusion XL", desc: "开源图像生成" },
+      { id: "midjourney", name: "Midjourney", desc: "高质量图像生成" },
+    ],
+    tts: [
+      { id: "minimax-tts", name: "MiniMax TTS", desc: "中文语音合成" },
+      { id: "elevenlabs", name: "ElevenLabs", desc: "高质量语音合成" },
+      { id: "openai-tts", name: "OpenAI TTS", desc: "OpenAI 语音合成" },
+    ],
+    video: [
+      { id: "kling-video", name: "可灵视频", desc: "快手视频生成" },
+      { id: "runway-gen-3", name: "Runway Gen-3", desc: "Runway 视频生成" },
+      { id: "pika", name: "Pika", desc: "Pika 视频生成" },
+    ],
+  };
+
+  const handleModelSelect = (modelId: string, modelName: string) => {
+    setCustomModelName(modelId);
+    if (!alias) setAlias(modelName);
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -113,7 +150,42 @@ export default function ModelsPage() {
       <h2 className="font-display text-xl font-bold text-white mb-4">模型配置</h2>
       <div className="flex flex-wrap gap-2 mb-8">{capabilities.map((cap)=>(<button key={cap.id} onClick={()=>setSelectedCapability(cap.id)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedCapability===cap.id?"bg-anime-purple text-white":"bg-panel-deep border border-divider text-text-secondary hover:text-white hover:border-anime-purple/40"}`}>{cap.name}</button>))}</div>
       {isLoading?(<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">{[1,2,3].map(i=><Card key={i} className="h-48 animate-pulse bg-panel-deep"/>)}</div>):(<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"><AnimatePresence mode="popLayout">{models.map((model: AIModel) =>{const {status,keyMask}=getStatus(model.id,apiKeys);return (<motion.div key={model.id} layout initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:0.95}} transition={{duration:0.2}}><Card className="h-full hover:border-anime-purple/30 transition-colors"><CardHeader className="pb-3"><div className="flex items-start justify-between"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-lg bg-panel-mid flex items-center justify-center"><KeyIcon className="w-5 h-5 text-anime-purple"/></div><div><CardTitle className="text-base">{model.name}</CardTitle><CardDescription>{model.provider}</CardDescription></div></div><Badge variant={status==="configured"?"success":status==="not_configured"?"warning":"info"}>{status==="configured"?"已配置":status==="not_configured"?"未配置":"可选"}</Badge></div></CardHeader><CardContent><p className="text-sm text-text-secondary mb-1">{formatPrice(model.billingRule)}</p><p className="text-xs text-text-disabled line-clamp-2 mb-4 h-8">{model.description}</p>{status==="configured"&&keyMask&&(<div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-panel-mid border border-divider"><CheckIcon className="w-4 h-4 text-neon-cyan"/><span className="text-sm text-text-secondary font-mono">{keyMask}</span></div>)}<div className="flex gap-2"><Button variant={status==="configured"?"secondary":"primary"} size="sm" className="flex-1" onClick={()=>setConfiguringModel(model)}>{status==="configured"?"编辑配置":"配置 API Key"}</Button>{status==="configured"&&(<Button variant="outline" size="sm" className="px-2 border-warm-orange/30 text-warm-orange hover:bg-warm-orange/10" onClick={()=>{const key=apiKeys.find((k: UserApiKey) =>k.modelId===model.id);if(key)deleteKeyMutation.mutate(key.id);}}>删除</Button>)}<Button variant="outline" size="sm" className="px-2" onClick={()=>model.docUrl&&window.open(model.docUrl,"_blank")}><ExternalLinkIcon className="w-4 h-4"/></Button></div></CardContent></Card></motion.div>);})}</AnimatePresence></div>)}
-      <AnimatePresence>{configuringModel&&(<motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm" onClick={()=>setConfiguringModel(null)}><motion.div initial={{opacity:0,x:100}} animate={{opacity:1,x:0}} exit={{opacity:0,x:100}} onClick={e=>e.stopPropagation()} className="w-full max-w-md h-full bg-panel-deep border-l border-divider shadow-2xl overflow-y-auto"><div className="p-6 border-b border-divider"><div className="flex items-center justify-between"><div><h3 className="font-display text-xl font-bold text-white">{configuringModel.name}</h3><p className="text-sm text-text-secondary">{configuringModel.provider} · {capabilities.find((c)=>c.id===configuringModel.capability)?.name}</p></div><button onClick={()=>setConfiguringModel(null)} className="text-text-secondary hover:text-white">✕</button></div></div><div className="p-6 space-y-6"><div className="p-4 rounded-lg bg-panel-mid border border-divider"><p className="text-sm text-text-secondary mb-2">参考价格</p><p className="text-white font-medium">{formatPrice(configuringModel.billingRule)}</p>{configuringModel.docUrl&&(<a href={configuringModel.docUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-anime-purple hover:underline mt-2">去官方获取 API Key<ExternalLinkIcon className="w-3 h-3"/></a>)}</div><div className="space-y-4"><div><label className="block text-sm font-medium text-text-secondary mb-2">API Key</label><Input type="password" placeholder="sk-..." value={apiKey} onChange={e=>setApiKey(e.target.value)}/></div><div><label className="block text-sm font-medium text-text-secondary mb-2">Key 别名</label><Input placeholder="例如：我的主 Key" value={alias} onChange={e=>setAlias(e.target.value)}/></div><ParameterFields parameters={configuringModel.parameters}/></div>{createKeyMutation.isError&&(<div className="p-3 rounded-lg bg-warm-orange/10 border border-warm-orange/30 text-warm-orange text-sm">{(createKeyMutation.error as ApiError)?.response?.data?.message||"验证失败，请检查 API Key"}</div>)}<Button className="w-full gap-2" onClick={handleSave} disabled={!apiKey.trim()||createKeyMutation.isPending} isLoading={createKeyMutation.isPending}><CheckIcon className="w-4 h-4"/>{createKeyMutation.isPending?"验证中...":"验证并保存"}</Button></div></motion.div></motion.div>)}</AnimatePresence>
+      <AnimatePresence>{configuringModel&&(<motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm" onClick={()=>setConfiguringModel(null)}><motion.div initial={{opacity:0,x:100}} animate={{opacity:1,x:0}} exit={{opacity:0,x:100}} onClick={e=>e.stopPropagation()} className="w-full max-w-md h-full bg-panel-deep border-l border-divider shadow-2xl overflow-y-auto"><div className="p-6 border-b border-divider"><div className="flex items-center justify-between"><div><h3 className="font-display text-xl font-bold text-white">{configuringModel.name}</h3><p className="text-sm text-text-secondary">{configuringModel.provider} · {capabilities.find((c)=>c.id===configuringModel.capability)?.name}</p></div><button onClick={()=>setConfiguringModel(null)} className="text-text-secondary hover:text-white">✕</button></div></div><div className="p-6 space-y-6">
+        {/* 模型选择 */}
+        <div className="p-4 rounded-lg bg-panel-mid border border-divider">
+          <p className="text-sm font-medium text-text-secondary mb-3">选择模型</p>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-text-secondary mb-1">从推荐列表选择</label>
+              <select
+                className="w-full h-10 rounded-lg border border-divider bg-panel-deep px-3 text-sm text-white"
+                value={customModelName}
+                onChange={(e) => {
+                  const selected = recommendedModels[configuringModel.capability]?.find(m => m.id === e.target.value);
+                  if (selected) handleModelSelect(selected.id, selected.name);
+                }}
+              >
+                <option value="">-- 选择推荐模型 --</option>
+                {(recommendedModels[configuringModel.capability] || []).map((m) => (
+                  <option key={m.id} value={m.id}>{m.name} - {m.desc}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-text-secondary mb-1">或手动输入模型名称</label>
+              <Input
+                placeholder="例如：deepseek-chat, gpt-4o, claude-3-5-sonnet"
+                value={customModelName}
+                onChange={(e) => setCustomModelName(e.target.value)}
+              />
+              <p className="text-[10px] text-text-disabled mt-1">
+                输入你使用的 API 服务商对应的模型 ID
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-lg bg-panel-mid border border-divider"><p className="text-sm text-text-secondary mb-2">参考价格</p><p className="text-white font-medium">{formatPrice(configuringModel.billingRule)}</p>{configuringModel.docUrl&&(<a href={configuringModel.docUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-anime-purple hover:underline mt-2">去官方获取 API Key<ExternalLinkIcon className="w-3 h-3"/></a>)}</div><div className="space-y-4"><div><label className="block text-sm font-medium text-text-secondary mb-2">API Key</label><Input type="password" placeholder="sk-..." value={apiKey} onChange={e=>setApiKey(e.target.value)}/></div><div><label className="block text-sm font-medium text-text-secondary mb-2">Key 别名</label><Input placeholder="例如：我的主 Key" value={alias} onChange={e=>setAlias(e.target.value)}/></div><ParameterFields parameters={configuringModel.parameters}/></div>{createKeyMutation.isError&&(<div className="p-3 rounded-lg bg-warm-orange/10 border border-warm-orange/30 text-warm-orange text-sm">{(createKeyMutation.error as ApiError)?.response?.data?.message||"验证失败，请检查 API Key"}</div>)}<Button className="w-full gap-2" onClick={handleSave} disabled={!apiKey.trim()||createKeyMutation.isPending} isLoading={createKeyMutation.isPending}><CheckIcon className="w-4 h-4"/>{createKeyMutation.isPending?"验证中...":"验证并保存"}</Button></div></motion.div></motion.div>)}</AnimatePresence>
     </div>
   );
 }
