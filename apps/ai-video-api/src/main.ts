@@ -1,21 +1,24 @@
 import { NestFactory } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { ValidationPipe } from '@nestjs/common';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
+  // 使用 Winston 作为全局日志
+  app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
+
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     transform: true,
   }));
-  
+
   app.useGlobalFilters(new GlobalExceptionFilter());
-  // Rate limiting guard will be applied per-module via decorators
-  
+
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,

@@ -1,10 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { LoggerModule } from './modules/logger/logger.module';
+import { RequestLoggerMiddleware } from './modules/logger/request-logger.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { ModelsModule } from './modules/models/models.module';
 import { ProjectsModule } from './modules/projects/projects.module';
@@ -27,6 +29,7 @@ import { AgentsModule } from './modules/agents/agents.module';
       ttl: 60000,  // 1 minute
       limit: 30,   // 30 requests per minute globally
     }]),
+    LoggerModule,
     PrismaModule,
     CommonModule,
     QueueModule,
@@ -47,4 +50,10 @@ import { AgentsModule } from './modules/agents/agents.module';
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RequestLoggerMiddleware)
+      .forRoutes('*');
+  }
+}
