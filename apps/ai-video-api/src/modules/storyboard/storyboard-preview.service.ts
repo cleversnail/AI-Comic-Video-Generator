@@ -23,17 +23,38 @@ export class StoryboardPreviewService {
     const { apiKey, modelId, baseUrl } = await this.modelsService.resolveApiKey(userId, projectId, 'image');
 
     const params = shot.params as any;
-    const prompt = dto.customPrompt || shot.prompt || params?.description || '';
-    if (!prompt) throw new BadRequestException('该分镜没有提示词，无法生成预览');
+    const originalPrompt = dto.customPrompt || shot.prompt || params?.description || '';
+    if (!originalPrompt) throw new BadRequestException('该分镜没有提示词，无法生成预览');
 
     // 获取角色信息和参考图
-    const { characterPrompt, referenceImage } = await this.buildCharacterDataForShot(projectId, params?.characterIds || []);
-    const finalPrompt = characterPrompt ? `${characterPrompt}, ${prompt}` : prompt;
+    const { characterPrompt, referenceImage, characterCount } = await this.buildCharacterDataForShot(projectId, params?.characterIds || []);
+
+    // 构建最终提示词：角色描述 + 原始场景描述 + 构图指导
+    const promptParts: string[] = [];
+
+    // 1. 角色描述（如果有）
+    if (characterPrompt) {
+      promptParts.push(characterPrompt);
+    }
+
+    // 2. 原始场景描述（保留用户输入的画面描述细节）
+    promptParts.push(originalPrompt);
+
+    // 3. 构图指导（多人场景时确保所有人都在画面中）
+    if (characterCount > 1) {
+      promptParts.push(`show all ${characterCount} characters clearly in the scene, group composition, all characters visible`);
+    }
+
+    // 4. 质量控制
+    promptParts.push('high quality, detailed, cinematic lighting, anime style');
+
+    const finalPrompt = promptParts.join(', ');
 
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     const dimensions = this.getDimensionsByAspectRatio(project?.aspectRatio || '9:16');
 
     this.logger.log(`Generating preview for shot ${shotId} using ${modelId}${referenceImage ? ' with reference image' : ''}`);
+    this.logger.log(`Final prompt: ${finalPrompt.substring(0, 200)}...`);
 
     let imageUrl: string;
     try {
@@ -41,7 +62,7 @@ export class StoryboardPreviewService {
       const result = await imageAdapter.generateImage(
         {
           prompt: finalPrompt,
-          negativePrompt: shot.negativePrompt || undefined,
+          negativePrompt: shot.negativePrompt || 'blurry, deformed, low quality, missing limbs, extra limbs',
           width: dimensions.width,
           height: dimensions.height,
           referenceImage: referenceImage || undefined,
@@ -68,54 +89,55 @@ export class StoryboardPreviewService {
   private async buildCharacterDataForShot(
     projectId: string,
     characterIds: string[],
-  ): Promise<{ characterPrompt: string; referenceImage: string | null }> {
-    if (!characterIds?.length) return { characterPrompt: '', referenceImage: null };
+  ): Promise<{ characterPrompt: string; referenceImage: string | null; characterCount: number }> {
+    if (!characterIds?.length) return { characterPrompt: '', referenceImage: null, characterCount: 0 };
 
     const characters = await this.prisma.character.findMany({
       where: { projectId, id: { in: characterIds } },
     });
 
-    if (characters.length === 0) return { characterPrompt: '', referenceImage: null };
+    if (characters.length === 0) return { characterPrompt: '', referenceImage: null, characterCount: 0 };
 
-    const prompts: string[] = [];
+    const characterDescriptions: string[] = [];
     let referenceImage: string | null = null;
 
     for (const character of characters) {
-      const parts: string[] = [`same character as ${character.name}`];
+      const parts: string[] = [character.name];
+
+      // 外貌特征
       if (character.appearance) parts.push(character.appearance);
       if (character.outfit) parts.push(`wearing ${character.outfit}`);
 
       // 锁定强度
       const lockLevel = character.lockLevel || 'medium';
       if (lockLevel === 'strict') {
-        parts.push('highly consistent appearance, identical character design, same face and outfit');
-      } else if (lockLevel === 'medium') {
-        parts.push('consistent character design, same face and outfit style');
-      } else {
-        parts.push('similar character style');
+        parts.push('identical to reference');
       }
 
-      // 优先使用主图作为参考，其次使用四视图
+      // 优先使用主图作为参考
       if (!referenceImage) {
         if (character.mainImage) {
           referenceImage = character.mainImage;
-          parts.push('maintain exact same appearance as reference image');
         } else if (character.viewImages) {
           const viewImages = character.viewImages as any;
-          const frontImage = viewImages?.front;
-          if (frontImage) {
-            referenceImage = frontImage;
-            parts.push('maintain exact same appearance as reference image');
+          if (viewImages?.front) {
+            referenceImage = viewImages.front;
           }
         }
       }
 
-      prompts.push(parts.join(', '));
+      characterDescriptions.push(parts.join(', '));
     }
 
+    // 构建角色描述：将每个角色作为独立的实体描述
+    const characterPrompt = characterDescriptions
+      .map((desc, i) => `character ${i + 1}: ${desc}`)
+      .join('; ');
+
     return {
-      characterPrompt: 'featuring ' + prompts.join('; and '),
+      characterPrompt,
       referenceImage,
+      characterCount: characters.length,
     };
   }
 
