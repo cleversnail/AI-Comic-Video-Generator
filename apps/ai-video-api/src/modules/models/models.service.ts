@@ -73,6 +73,20 @@ export class ModelsService {
             validationResult = { valid: dto.apiKey.length > 10, message: '基础格式验证通过' };
           }
           break;
+        case 'tts':
+          if (this.adapterFactory.hasAdapter(dto.modelId)) {
+            validationResult = await this.adapterFactory.getTTSAdapter(dto.modelId).validateKey(dto.apiKey);
+          } else {
+            validationResult = { valid: dto.apiKey.length > 10, message: '基础格式验证通过' };
+          }
+          break;
+        case 'video':
+          if (this.adapterFactory.hasAdapter(dto.modelId)) {
+            validationResult = await this.adapterFactory.getVideoAdapter(dto.modelId).validateKey(dto.apiKey);
+          } else {
+            validationResult = { valid: dto.apiKey.length > 10, message: '基础格式验证通过' };
+          }
+          break;
         default:
           // 对于尚未实现 Adapter 的模型，只做基础格式验证
           validationResult = { valid: dto.apiKey.length > 10, message: '基础格式验证通过' };
