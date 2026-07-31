@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, IsNumber, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateShotDto {
@@ -17,21 +17,13 @@ export class UpdateShotDto {
   @IsOptional()
   characterIds?: string[];
 
-  @ApiProperty({
-    description: '景别',
-    required: false,
-    enum: ['特写', '近景', '中景', '全景', '远景'],
-  })
-  @IsEnum(['特写', '近景', '中景', '全景', '远景'])
+  @ApiProperty({ description: '景别', required: false })
+  @IsString()
   @IsOptional()
   shotType?: string;
 
-  @ApiProperty({
-    description: '镜头角度',
-    required: false,
-    enum: ['平视', '俯拍', '仰拍', '跟拍', '固定'],
-  })
-  @IsEnum(['平视', '俯拍', '仰拍', '跟拍', '固定'])
+  @ApiProperty({ description: '镜头角度', required: false })
+  @IsString()
   @IsOptional()
   cameraAngle?: string;
 
