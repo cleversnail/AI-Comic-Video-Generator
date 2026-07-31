@@ -26,19 +26,26 @@ export class StoryboardPreviewService {
     const prompt = dto.customPrompt || shot.prompt || params?.description || '';
     if (!prompt) throw new BadRequestException('该分镜没有提示词，无法生成预览');
 
-    const characterPrompt = await this.buildCharacterPromptForShot(projectId, params?.characterIds || []);
+    // 获取角色信息和参考图
+    const { characterPrompt, referenceImage } = await this.buildCharacterDataForShot(projectId, params?.characterIds || []);
     const finalPrompt = characterPrompt ? `${characterPrompt}, ${prompt}` : prompt;
 
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     const dimensions = this.getDimensionsByAspectRatio(project?.aspectRatio || '9:16');
 
-    this.logger.log(`Generating preview for shot ${shotId} using ${modelId}`);
+    this.logger.log(`Generating preview for shot ${shotId} using ${modelId}${referenceImage ? ' with reference image' : ''}`);
 
     let imageUrl: string;
     try {
       const imageAdapter = this.adapterFactory.getImageAdapter(modelId);
       const result = await imageAdapter.generateImage(
-        { prompt: finalPrompt, width: dimensions.width, height: dimensions.height },
+        {
+          prompt: finalPrompt,
+          negativePrompt: shot.negativePrompt || undefined,
+          width: dimensions.width,
+          height: dimensions.height,
+          referenceImage: referenceImage || undefined,
+        },
         { apiKey, baseUrl }
       );
       imageUrl = result.url;
@@ -55,39 +62,61 @@ export class StoryboardPreviewService {
     return { data: { shotId, previewUrl: imageUrl, status: 'previewed' } };
   }
 
-  private async buildCharacterPromptForShot(projectId: string, characterIds: string[]): Promise<string> {
-    if (!characterIds?.length) return '';
+  /**
+   * 构建角色提示词和参考图
+   */
+  private async buildCharacterDataForShot(
+    projectId: string,
+    characterIds: string[],
+  ): Promise<{ characterPrompt: string; referenceImage: string | null }> {
+    if (!characterIds?.length) return { characterPrompt: '', referenceImage: null };
 
     const characters = await this.prisma.character.findMany({
       where: { projectId, id: { in: characterIds } },
     });
 
-    if (characters.length === 0) return '';
+    if (characters.length === 0) return { characterPrompt: '', referenceImage: null };
 
     const prompts: string[] = [];
+    let referenceImage: string | null = null;
+
     for (const character of characters) {
       const parts: string[] = [`same character as ${character.name}`];
       if (character.appearance) parts.push(character.appearance);
       if (character.outfit) parts.push(`wearing ${character.outfit}`);
 
+      // 锁定强度
       const lockLevel = character.lockLevel || 'medium';
       if (lockLevel === 'strict') {
-        parts.push('highly consistent appearance, identical character design');
+        parts.push('highly consistent appearance, identical character design, same face and outfit');
       } else if (lockLevel === 'medium') {
         parts.push('consistent character design, same face and outfit style');
       } else {
         parts.push('similar character style');
       }
 
-      if (character.viewImages) {
-        const viewCount = Object.values(character.viewImages).filter(Boolean).length;
-        if (viewCount > 0) parts.push(`refer to ${viewCount}-view character sheet`);
+      // 优先使用主图作为参考，其次使用四视图
+      if (!referenceImage) {
+        if (character.mainImage) {
+          referenceImage = character.mainImage;
+          parts.push('maintain exact same appearance as reference image');
+        } else if (character.viewImages) {
+          const viewImages = character.viewImages as any;
+          const frontImage = viewImages?.front;
+          if (frontImage) {
+            referenceImage = frontImage;
+            parts.push('maintain exact same appearance as reference image');
+          }
+        }
       }
 
       prompts.push(parts.join(', '));
     }
 
-    return 'featuring ' + prompts.join('; and ');
+    return {
+      characterPrompt: 'featuring ' + prompts.join('; and '),
+      referenceImage,
+    };
   }
 
   private getDimensionsByAspectRatio(ratio: string) {
