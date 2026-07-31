@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { storyboardApi } from "@/lib/api";
+import { storyboardApi, modelsApi } from "@/lib/api";
 import type { Shot } from "@/lib/api";
+import Link from "next/link";
 
 interface TtsPanelProps {
   projectId: string;
@@ -27,6 +28,13 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
   const [selectedVoice, setSelectedVoice] = useState('male-qn-qingse');
   const [speed, setSpeed] = useState(1.0);
   const [results, setResults] = useState<Array<{ shotId: string; status: string; audioUrl?: string }>>([]);
+
+  // 检查是否配置了 TTS API Key
+  const { data: apiKeys = [] } = useQuery({
+    queryKey: ["apiKeys"],
+    queryFn: () => modelsApi.listMyApiKeys(),
+  });
+  const hasTtsKey = apiKeys.some((k: any) => k.capability === "tts");
 
   // Clear results when shots update
   useEffect(() => {
@@ -79,7 +87,7 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
           className="gap-2"
           onClick={() => batchMutation.mutate()}
           isLoading={batchMutation.isPending}
-          disabled={shotsWithText.length === 0}
+          disabled={shotsWithText.length === 0 || !hasTtsKey}
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polygon points="5 3 19 12 5 21 5 3" />
@@ -87,6 +95,29 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
           {batchMutation.isPending ? "生成中..." : `批量生成 (${shotsWithText.length})`}
         </Button>
       </div>
+
+      {/* TTS 模型配置提示 */}
+      {!hasTtsKey && (
+        <div className="mb-4 p-4 rounded-xl bg-warm-orange/10 border border-warm-orange/20">
+          <div className="flex items-start gap-3">
+            <span className="text-lg">⚠️</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-warm-orange mb-1">需要配置语音合成模型</p>
+              <p className="text-xs text-text-secondary mb-3">
+                生成配音需要配置语音合成模型（如 MiniMax TTS）的 API Key
+              </p>
+              <Link href="/settings/models">
+                <Button size="sm" variant="outline" className="gap-2">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17" />
+                  </svg>
+                  去配置模型
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {shotsWithText.length === 0 ? (
         <div className="text-center py-20">
@@ -193,6 +224,7 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
                     variant="outline"
                     onClick={() => singleMutation.mutate(shot.id)}
                     isLoading={singleMutation.isPending}
+                    disabled={!hasTtsKey}
                   >
                     {hasAudio ? "重新生成" : "生成配音"}
                   </Button>
