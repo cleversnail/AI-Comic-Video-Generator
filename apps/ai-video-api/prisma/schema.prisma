@@ -180,7 +180,7 @@ model Shot {
 model UserApiKey {
   id            String   @id @default(uuid())
   alias         String
-  keyEncrypted  String   @map("key_encrypted")
+  keyEncrypted  String   @map("key_encrypted") @db.Text
   keyMask       String   @map("key_mask")
   status        String   @default("unverified")
   isDefault     Boolean  @default(false) @map("is_default")
