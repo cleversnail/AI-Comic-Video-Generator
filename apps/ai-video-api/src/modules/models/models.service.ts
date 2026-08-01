@@ -313,6 +313,24 @@ export class ModelsService {
     return this.cryptoService.decrypt(encryptedData);
   }
 
+  async resolveApiKeyById(apiKeyId: string): Promise<{ apiKey: string; modelId: string; baseUrl?: string }> {
+    const key = await this.prisma.userApiKey.findUnique({
+      where: { id: apiKeyId },
+      include: { model: true },
+    });
+
+    if (!key) {
+      throw new NotFoundException('API Key not found');
+    }
+
+    const apiKey = this.cryptoService.decrypt(key.keyEncrypted);
+    return {
+      apiKey,
+      modelId: key.modelId,
+      baseUrl: key.model.apiBaseUrl || undefined,
+    };
+  }
+
   async resolveApiKey(userId: string, projectId: string, capability: string): Promise<{ apiKey: string; modelId: string; baseUrl?: string }> {
     // 1. 先查项目级配置
     let preference = await this.prisma.modelPreference.findUnique({

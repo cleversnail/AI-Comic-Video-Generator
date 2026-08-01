@@ -6,6 +6,7 @@ export interface GenerationJobData {
   taskId: string;
   projectId: string;
   shotId?: string;
+  userId: string;
   capability: 'image' | 'video' | 'tts';
   modelId: string;
   apiKeyId: string;

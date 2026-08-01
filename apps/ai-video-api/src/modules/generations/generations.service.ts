@@ -41,6 +41,7 @@ export class GenerationsService {
       taskId: task.id,
       projectId,
       shotId: dto.shotId,
+      userId,
       capability: dto.capability as any,
       modelId: dto.modelId,
       apiKeyId,
