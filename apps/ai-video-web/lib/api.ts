@@ -40,9 +40,11 @@ export interface AuthResponse {
 
 export interface AIModel { id: string; name: string; provider: string; capability: string; description?: string; docUrl?: string; billingRule?: { unitPrice: number; currency: string; unit: string }; parameters?: ModelParameter[]; }
 export interface ModelParameter { key: string; name: string; type: "string"|"number"|"select"; defaultValue?: unknown; options?: { label: string; value: unknown }[]; min?: number; max?: number; }
-export interface UserApiKey { id: string; modelId: string; keyMask: string; alias?: string; isDefault: boolean; }
-export interface Project { id: string; name: string; description?: string; status: "draft"|"in_progress"|"completed"; style?: string; aspectRatio?: string; shotCount: number; createdAt: string; updatedAt: string; }
+export interface UserApiKey { id: string; modelId: string; keyMask: string; alias?: string; isDefault: boolean; capability?: string; }
+export interface Project { id: string; name: string; description?: string; status: "draft"|"in_progress"|"completed"; style?: string; aspectRatio?: string; shotCount?: number; characterCount?: number; createdAt: string; updatedAt: string; characters?: Character[]; storyboard?: { id: string; shots: Shot[] }; shots?: Shot[]; }
 export interface CreateProjectDto { name: string; description?: string; style?: string; aspectRatio?: string; }
+export interface ModelPreferenceConfig { modelId: string; apiKeyId?: string; parameters?: Record<string, unknown>; }
+export interface ModelPreference { id: string; projectId: string; defaults: Record<string, ModelPreferenceConfig>; createdAt: string; updatedAt: string; }
 
 // ==================== Character Types ====================
 export interface Character {
@@ -248,8 +250,10 @@ export const modelsApi = {
   deleteApiKey: (id: string) => api.delete(`/models/api-keys/${id}`).then((r) => r.data),
   updateApiKey: (id: string, data: { apiKey?: string; alias?: string; isDefault?: boolean }) =>
     api.put<{ data: UserApiKey }>(`/models/api-keys/${id}`, data).then((r) => r.data.data),
-  setPreferences: (data: { projectId: string; modelId: string }) => api.post("/models/preferences", data).then((r) => r.data),
-  getPreferences: (projectId: string) => api.get(`/models/preferences/${projectId}`).then((r) => r.data),
+  setPreferences: (data: { projectId: string; defaults: Record<string, ModelPreferenceConfig> }) =>
+    api.post<{ data: ModelPreference }>("/models/preferences", data).then((r) => r.data.data),
+  getPreferences: (projectId: string) =>
+    api.get<{ data: ModelPreference }>(`/models/preferences/${projectId}`).then((r) => r.data.data),
   getCostSummary: () => api.get<{ data: CostSummary }>("/models/cost/summary").then((r) => r.data.data),
   getProjectCost: (projectId: string) => api.get<{ data: ProjectCostSummary }>(`/models/cost/project/${projectId}`).then((r) => r.data.data),
 };
@@ -298,8 +302,8 @@ export interface CreateTemplateDto {
 
 export const projectsApi = {
   listProjects: () => api.get<any>("/projects").then((r) => r.data.data),
-  getProject: (id: string) => api.get<Project>(`/projects/${id}`).then((r) => r.data),
-  createProject: (data: CreateProjectDto) => api.post<Project>("/projects", data).then((r) => r.data),
+  getProject: (id: string) => api.get<{ data: Project }>(`/projects/${id}`).then((r) => r.data.data),
+  createProject: (data: CreateProjectDto) => api.post<{ data: Project }>("/projects", data).then((r) => r.data.data),
   deleteProject: (id: string) => api.delete(`/projects/${id}`).then((r) => r.data),
   // Version APIs
   createVersion: (id: string, label?: string) =>
@@ -505,12 +509,11 @@ export const generationsApi = {
 // ==================== Compose API ====================
 
 export interface ComposeResult {
-  id: string;
   projectId: string;
-  status: 'processing' | 'completed' | 'failed';
-  outputUrl?: string;
-  errorMessage?: string;
-  createdAt: string;
+  shots: number;
+  totalDuration: number;
+  status: 'ready' | 'processing' | 'completed' | 'failed';
+  message?: string;
 }
 
 export interface PlatformConfig {
