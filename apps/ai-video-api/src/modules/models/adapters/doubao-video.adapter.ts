@@ -159,13 +159,21 @@ export class DoubaoVideoAdapter implements VideoAdapter {
 
       const data = response.data;
 
-      this.logger.log(`Poll task ${taskId}: status=${data.status}`);
+      this.logger.log(`Poll task ${taskId}: status=${data.status}, response=${JSON.stringify(data).substring(0, 200)}`);
 
       if (data.status === 'succeeded' || data.status === 'completed') {
+        // 尝试多种可能的视频 URL 字段
+        const videoUrl = data.output?.video_url ||
+                         data.output?.url ||
+                         data.video_url ||
+                         data.url ||
+                         data.result?.video_url ||
+                         data.result?.url;
+
         return {
           taskId,
           status: 'completed',
-          url: data.output?.video_url,
+          url: videoUrl,
           duration: data.duration,
         };
       }
