@@ -33,7 +33,8 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
   const [speed, setSpeed] = useState(1.0);
   const [results, setResults] = useState<Array<{ shotId: string; status: string; audioUrl?: string }>>([]);
   const [processingShotId, setProcessingShotId] = useState<string | null>(null);
-  const [generationCount, setGenerationCount] = useState<Record<string, number>>({});
+  // 本地覆盖：存储最新生成的 audioUrl，立即生效，不等 query refetch
+  const [audioOverrides, setAudioOverrides] = useState<Record<string, string>>({});
 
   // 检查是否配置了 TTS API Key
   const { data: apiKeys = [] } = useQuery({
@@ -42,8 +43,9 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
   });
   const hasTtsKey = apiKeys.some((k: { capability?: string }) => k.capability === "tts");
 
-  // Clear results when shots update
+  // Clear overrides when shots update (refetch 完成后用服务端数据)
   useEffect(() => {
+    setAudioOverrides({});
     setResults([]);
   }, [shots]);
 
@@ -62,6 +64,12 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       setResults(data.results || []);
       setProcessingShotId(null);
+      // 批量结果也写入本地覆盖
+      const overrides: Record<string, string> = {};
+      for (const r of data.results || []) {
+        if (r.audioUrl) overrides[r.shotId] = r.audioUrl;
+      }
+      setAudioOverrides((prev) => ({ ...prev, ...overrides }));
     },
     onError: (error: unknown) => {
       toast.error("批量配音失败", getApiErrorMessage(error));
@@ -77,18 +85,25 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
         speed,
       });
     },
-    onSuccess: (_data, shotId) => {
+    onSuccess: (data, shotId) => {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       toast.success("配音生成成功");
       setProcessingShotId(null);
-      // 递增该分镜的生成计数，强制 audio 元素重新渲染
-      setGenerationCount((prev) => ({ ...prev, [shotId]: (prev[shotId] || 0) + 1 }));
+      // 立即将新 audioUrl 写入本地覆盖，不等 refetch
+      if (data?.audioUrl) {
+        setAudioOverrides((prev) => ({ ...prev, [shotId]: data.audioUrl }));
+      }
     },
     onError: (error: unknown) => {
       toast.error("配音生成失败", getApiErrorMessage(error));
       setProcessingShotId(null);
     },
   });
+
+  // 获取分镜的最新 audioUrl（优先用本地覆盖）
+  const getAudioUrl = (shotId: string, paramsAudioUrl?: string): string | undefined => {
+    return audioOverrides[shotId] || paramsAudioUrl;
+  };
 
   return (
     <div className="p-6 max-w-4xl">
@@ -192,7 +207,8 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
           <div className="space-y-3">
             {shotsWithText.map((shot, index) => {
               const params = shot.params || {};
-              const hasAudio = !!params.audioUrl;
+              const currentAudioUrl = getAudioUrl(shot.id, params.audioUrl);
+              const hasAudio = !!currentAudioUrl;
               const batchResult = results.find((r) => r.shotId === shot.id);
 
               return (
@@ -230,8 +246,8 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
 
                   {/* Audio Player */}
                   {hasAudio && (
-                    <audio controls className="h-8 w-40" key={`${shot.id}-${generationCount[shot.id] || 0}`}>
-                      <source src={params.audioUrl} type="audio/mp3" />
+                    <audio controls className="h-8 w-40" key={`${shot.id}-${currentAudioUrl.length}`}>
+                      <source src={currentAudioUrl} type="audio/mp3" />
                     </audio>
                   )}
 
