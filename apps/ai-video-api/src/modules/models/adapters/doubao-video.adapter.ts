@@ -32,35 +32,36 @@ export class DoubaoVideoAdapter implements VideoAdapter {
     this.logger.log(`Video input: prompt=${input.prompt?.substring(0, 50)}..., duration=${input.duration}`);
 
     try {
+      // 构建 content 数组
+      const content: Array<Record<string, unknown>> = [
+        {
+          type: 'text',
+          text: input.prompt || '',
+        },
+      ];
+
+      // 如果有首帧参考图，添加到 content
+      if (input.firstFrameUrl) {
+        content.push({
+          type: 'image_url',
+          image_url: {
+            url: input.firstFrameUrl,
+          },
+          role: 'reference_image',
+        });
+      }
+
       // Ark 平台视频生成接口
-      // 注意：model 字段需要使用用户在 Ark 平台创建的端点 ID
       const response = await firstValueFrom(
         this.httpService.post(
           `${baseUrl}/contents/generations/tasks`,
           {
-            model: input.modelId || 'seedance-2-0-mini',  // 使用传入的模型 ID，或默认值
-            content: [
-              {
-                type: 'text',
-                text: input.prompt || '',
-              },
-            ],
+            model: input.modelId || 'doubao-seedance-2-0-260128',  // 使用正确的模型名称
+            content,
+            generate_audio: false,  // 不生成音频
+            ratio: input.resolution === '720p' ? '9:16' : '16:9',  // 根据分辨率设置比例
             duration: input.duration || 5,
-            resolution: input.resolution || '720p',
-            ...(input.firstFrameUrl && {
-              content: [
-                {
-                  type: 'text',
-                  text: input.prompt || '',
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: input.firstFrameUrl,
-                  },
-                },
-              ],
-            }),
+            watermark: false,
           },
           {
             headers: {
