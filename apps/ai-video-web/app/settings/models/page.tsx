@@ -51,14 +51,14 @@ export default function ModelsPage() {
       // 编辑模式：更新现有 Key
       const updateData: { apiKey?: string; alias?: string; isDefault?: boolean } = {};
       if (alias.trim()) updateData.alias = alias.trim();
-      if (customModelName) updateData.modelId = customModelName; // 注意：这里可能需要后端支持
       if (apiKey.trim()) updateData.apiKey = apiKey.trim();
       updateKeyMutation.mutate({ id: editingKeyId, data: updateData });
     } else {
       // 新建模式
       if (!apiKey.trim()) return;
+      const modelId = customModelName || configuringModel.id;
       createKeyMutation.mutate({
-        modelId: configuringModel.id,
+        modelId,
         apiKey: apiKey.trim(),
         alias: alias.trim() || `${configuringModel.name} Key`,
         isDefault: true,

@@ -137,7 +137,7 @@ const models = [
     description: 'MiniMax 出品的语音合成模型，中文效果好，音色丰富，适合中文漫剧配音。',
     docUrl: 'https://platform.minimaxi.com/',
     pricingUrl: 'https://platform.minimaxi.com/',
-    apiBaseUrl: 'https://api.minimaxi.chat',
+    apiBaseUrl: 'https://api.minimax.chat',
     parameters: [
       { key: 'voiceId', name: '音色', type: 'string', defaultValue: 'male-qn-qingse' },
     ],
