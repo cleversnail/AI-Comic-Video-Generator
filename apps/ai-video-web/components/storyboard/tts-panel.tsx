@@ -227,7 +227,7 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
 
                   {/* Audio Player */}
                   {hasAudio && (
-                    <audio controls className="h-8 w-40">
+                    <audio controls className="h-8 w-40" key={`${shot.id}-${params.audioUrl?.substring(0, 50)}`}>
                       <source src={params.audioUrl} type="audio/mp3" />
                     </audio>
                   )}
