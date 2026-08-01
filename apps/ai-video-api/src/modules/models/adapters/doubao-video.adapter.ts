@@ -129,10 +129,19 @@ export class DoubaoVideoAdapter implements VideoAdapter {
       status = 'failed';
     }
 
+    // 尝试多种可能的视频 URL 字段（Ark 平台返回 content.video_url）
+    const videoUrl = data.content?.video_url ||
+                     data.output?.video_url ||
+                     data.output?.url ||
+                     data.video_url ||
+                     data.url ||
+                     data.result?.video_url ||
+                     data.result?.url;
+
     return {
       taskId,
       status,
-      url: data.output?.video_url,
+      url: videoUrl,
       duration: data.duration,
     };
   }
@@ -162,13 +171,16 @@ export class DoubaoVideoAdapter implements VideoAdapter {
       this.logger.log(`Poll task ${taskId}: status=${data.status}, response=${JSON.stringify(data).substring(0, 200)}`);
 
       if (data.status === 'succeeded' || data.status === 'completed') {
-        // 尝试多种可能的视频 URL 字段
-        const videoUrl = data.output?.video_url ||
+        // 尝试多种可能的视频 URL 字段（Ark 平台返回 content.video_url）
+        const videoUrl = data.content?.video_url ||
+                         data.output?.video_url ||
                          data.output?.url ||
                          data.video_url ||
                          data.url ||
                          data.result?.video_url ||
                          data.result?.url;
+
+        this.logger.log(`Task ${taskId} completed, videoUrl: ${videoUrl?.substring(0, 100)}`);
 
         return {
           taskId,
