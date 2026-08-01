@@ -33,6 +33,7 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
   const [speed, setSpeed] = useState(1.0);
   const [results, setResults] = useState<Array<{ shotId: string; status: string; audioUrl?: string }>>([]);
   const [processingShotId, setProcessingShotId] = useState<string | null>(null);
+  const [generationCount, setGenerationCount] = useState<Record<string, number>>({});
 
   // 检查是否配置了 TTS API Key
   const { data: apiKeys = [] } = useQuery({
@@ -76,10 +77,12 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
         speed,
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, shotId) => {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       toast.success("配音生成成功");
       setProcessingShotId(null);
+      // 递增该分镜的生成计数，强制 audio 元素重新渲染
+      setGenerationCount((prev) => ({ ...prev, [shotId]: (prev[shotId] || 0) + 1 }));
     },
     onError: (error: unknown) => {
       toast.error("配音生成失败", getApiErrorMessage(error));
@@ -227,7 +230,7 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
 
                   {/* Audio Player */}
                   {hasAudio && (
-                    <audio controls className="h-8 w-40" key={`${shot.id}-${params.audioUrl?.substring(0, 50)}`}>
+                    <audio controls className="h-8 w-40" key={`${shot.id}-${generationCount[shot.id] || 0}`}>
                       <source src={params.audioUrl} type="audio/mp3" />
                     </audio>
                   )}

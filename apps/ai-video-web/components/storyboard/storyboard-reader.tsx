@@ -214,7 +214,7 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
                   <audio
                     controls
                     className="w-full"
-                    key={`${currentShot.id}-${params.audioUrl?.substring(0, 50)}`}
+                    key={currentShot.id}
                     src={params.audioUrl}
                   />
                 </div>
