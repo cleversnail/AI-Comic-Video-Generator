@@ -112,15 +112,6 @@ export function ShotDetailPanel({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Auto-save with debounce
-  useEffect(() => {
-    if (!hasChanges) return;
-    const timer = setTimeout(() => {
-      onUpdate(form);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [form, hasChanges, onUpdate]);
-
   const hasChanges = JSON.stringify(form) !== JSON.stringify({
     title: params.title || `分镜 ${shot.sequence}`,
     description: params.description || "",
@@ -136,6 +127,15 @@ export function ShotDetailPanel({
     narration: params.narration || "",
     subtitle: params.subtitle || "",
   });
+
+  // Auto-save with debounce
+  useEffect(() => {
+    if (!hasChanges) return;
+    const timer = setTimeout(() => {
+      onUpdate(form);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [form, hasChanges, onUpdate]);
 
   const renderSelectGrid = (
     label: string,
