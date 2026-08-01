@@ -56,7 +56,7 @@ export class DoubaoVideoAdapter implements VideoAdapter {
         this.httpService.post(
           `${baseUrl}/contents/generations/tasks`,
           {
-            model: input.modelId || 'doubao-seedance-2-0-260128',  // 使用正确的模型名称
+            model: 'doubao-seedance-2-0-260128',  // 使用正确的模型名称
             content,
             generate_audio: false,  // 不生成音频
             ratio: input.resolution === '720p' ? '9:16' : '16:9',  // 根据分辨率设置比例
