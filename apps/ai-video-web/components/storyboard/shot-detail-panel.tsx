@@ -74,7 +74,7 @@ export function ShotDetailPanel({
   const params = useMemo(() => shot.params || {}, [shot.params]);
   const camera = useMemo(() => params.camera || {}, [params.camera]);
 
-  const [form, setForm] = useState<UpdateShotDto>({
+  const buildFormFromShot = () => ({
     title: params.title || `分镜 ${shot.sequence}`,
     description: params.description || "",
     prompt: shot.prompt || "",
@@ -90,23 +90,13 @@ export function ShotDetailPanel({
     subtitle: params.subtitle || "",
   });
 
+  const [form, setForm] = useState<UpdateShotDto>(buildFormFromShot);
+
+  // 只在切换分镜时重置表单，避免 refetch 导致闪烁
   useEffect(() => {
-    setForm({
-      title: params.title || `分镜 ${shot.sequence}`,
-      description: params.description || "",
-      prompt: shot.prompt || "",
-      negativePrompt: shot.negativePrompt || "",
-      duration: shot.duration || 3000,
-      shotType: shot.shotType || camera.shotSize || params.shotType || "中景",
-      cameraAngle: shot.cameraAngle || camera.angle || params.cameraAngle || "平视",
-      cameraMovement: camera.movement || params.cameraMovement || "static",
-      emotion: params.emotion || camera.mood || "",
-      lighting: camera.lighting || params.lighting || "soft_light",
-      dialogue: params.dialogue || "",
-      narration: params.narration || "",
-      subtitle: params.subtitle || "",
-    });
-  }, [shot, params, camera]);
+    setForm(buildFormFromShot());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shot.id]);
 
   const handleChange = (field: keyof UpdateShotDto, value: string | number | string[] | undefined) => {
     setForm((prev) => ({ ...prev, [field]: value }));
