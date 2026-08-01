@@ -19,6 +19,7 @@ import { StoryboardReader } from "@/components/storyboard/storyboard-reader";
 import { AssistantChat } from "@/components/assistant/assistant-chat";
 import { VersionHistory } from "@/components/version/version-history";
 import { useToast } from "@/components/ui/toast";
+import { getApiErrorMessage } from "@/lib/error";
 
 const tabs = [
   { id: "characters", label: "角色" },
