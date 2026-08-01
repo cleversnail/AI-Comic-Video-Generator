@@ -46,7 +46,7 @@ export class DoubaoVideoAdapter implements VideoAdapter {
           },
           {
             headers: {
-              Authorization: `Bearer ${config.apiKey}`,
+              Authorization: config.apiKey,  // 直接使用 API Key，不加 Bearer 前缀
               'Content-Type': 'application/json',
             },
             timeout: 30000,
@@ -106,7 +106,7 @@ export class DoubaoVideoAdapter implements VideoAdapter {
         },
         {
           headers: {
-            Authorization: `Bearer ${config.apiKey}`,
+            Authorization: config.apiKey,  // 直接使用 API Key，不加 Bearer 前缀
             'Content-Type': 'application/json',
           },
           timeout: 10000,
@@ -153,7 +153,7 @@ export class DoubaoVideoAdapter implements VideoAdapter {
           },
           {
             headers: {
-              Authorization: `Bearer ${apiKey}`,
+              Authorization: apiKey,  // 直接使用 API Key，不加 Bearer 前缀
               'Content-Type': 'application/json',
             },
             timeout: 10000,
