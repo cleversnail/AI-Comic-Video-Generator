@@ -34,6 +34,7 @@ export class TaskGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       if (!token) {
         this.logger.warn(`Client ${client.id} connected without token`);
+        client.emit('auth_error', { message: '缺少认证 token，请先登录' });
         client.disconnect();
         return;
       }
@@ -44,6 +45,7 @@ export class TaskGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       if (!userId) {
         this.logger.warn(`Invalid token for client ${client.id}`);
+        client.emit('auth_error', { message: '认证 token 无效' });
         client.disconnect();
         return;
       }
@@ -61,8 +63,10 @@ export class TaskGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.data.userId = userId;
 
       this.logger.log(`Client ${client.id} connected for user ${userId}`);
-    } catch (error) {
-      this.logger.error(`Connection error: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '认证失败';
+      this.logger.error(`Connection error: ${errorMessage}`);
+      client.emit('auth_error', { message: errorMessage });
       client.disconnect();
     }
   }

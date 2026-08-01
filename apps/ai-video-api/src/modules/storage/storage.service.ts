@@ -31,7 +31,8 @@ export class StorageService {
   async uploadBuffer(key: string, buffer: Buffer, contentType: string): Promise<string> {
     await this.ensureBucket();
     await this.client.putObject(this.bucket, key, buffer, buffer.length, { 'Content-Type': contentType });
-    return `/storage/${this.bucket}/${key}`;
+    // 返回 presigned URL，前端可直接访问
+    return this.getPresignedUrl(key, 86400); // 24小时有效
   }
 
   async uploadUrl(key: string, url: string): Promise<string> {

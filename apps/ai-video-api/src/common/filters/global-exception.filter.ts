@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { Request, Response } from 'express';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -14,7 +15,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = '服务器内部错误';
@@ -23,7 +25,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse();
-      message = typeof res === 'string' ? res : (res as any).message || message;
+      message = typeof res === 'string' ? res : (res as Record<string, unknown>).message as string || message;
       code = 'HTTP_ERROR';
     } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       status = HttpStatus.BAD_REQUEST;
@@ -47,12 +49,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message = '数据验证失败';
       code = 'VALIDATION_ERROR';
     } else if (exception instanceof Error) {
-      message = exception.message;
-      code = 'UNKNOWN_ERROR';
+      // 500 错误不暴露内部异常信息给客户端
+      message = status >= 500 ? '服务器内部错误，请稍后重试' : exception.message;
+      code = status >= 500 ? 'INTERNAL_ERROR' : 'UNKNOWN_ERROR';
     }
 
+    // 日志记录完整信息（包含请求路径和方法）
     this.logger.error(
-      `[${code}] ${message}`,
+      `[${code}] ${request.method} ${request.originalUrl} - ${message}`,
       exception instanceof Error ? exception.stack : '',
     );
 
@@ -60,6 +64,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: status,
       code,
       message,
+      path: request.originalUrl,
       timestamp: new Date().toISOString(),
     });
   }
