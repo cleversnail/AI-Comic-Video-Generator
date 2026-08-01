@@ -247,7 +247,7 @@ export default function GeneratePage() {
 
                 <div className="flex-1">
                   <p className="text-white font-medium">{shot.prompt?.substring(0, 50) || `分镜 ${shot.sequence}`}</p>
-                  {task?.resultUrl && (
+                  {task?.result?.url && (
                     <p className="text-xs text-neon-cyan mt-1">视频已生成</p>
                   )}
                   {task?.errorMessage && (
@@ -263,9 +263,9 @@ export default function GeneratePage() {
                 </Badge>
 
                 {/* 操作按钮 */}
-                {status === "completed" && task?.resultUrl ? (
+                {status === "completed" && task?.result?.url ? (
                   <Button size="sm" variant="outline" className="gap-1" asChild>
-                    <a href={task.resultUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={task.result.url} target="_blank" rel="noopener noreferrer">
                       <PlayIcon className="w-3 h-3" /> 预览
                     </a>
                   </Button>

@@ -60,11 +60,11 @@ export default function ExportPage() {
 
   // 获取已完成的视频片段
   const completedVideos = tasks
-    .filter((t) => t.status === "completed" && t.resultUrl)
+    .filter((t) => t.status === "completed" && t.result?.url)
     .map((t) => ({
       id: t.id,
       shotId: t.shotId,
-      url: t.resultUrl!,
+      url: t.result!.url!,
       shot: shots.find((s) => s.id === t.shotId),
     }));
 
@@ -160,7 +160,7 @@ export default function ExportPage() {
                   <div className="flex gap-1 overflow-x-auto pb-2">
                     {shots.map((shot) => {
                       const task = tasks.find((t) => t.shotId === shot.id);
-                      const hasVideo = task?.status === "completed" && task?.resultUrl;
+                      const hasVideo = task?.status === "completed" && task?.result?.url;
 
                       return (
                         <div

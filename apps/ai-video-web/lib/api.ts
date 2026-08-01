@@ -488,7 +488,14 @@ export interface GenerationTask {
   modelId: string;
   status: 'queued' | 'processing' | 'completed' | 'failed';
   progress?: number;
-  resultUrl?: string;
+  result?: {
+    url?: string;
+    audioUrl?: string;
+    taskId?: string;
+    duration?: number;
+    status?: string;
+  };
+  resultUrl?: string;  // 兼容旧格式
   errorMessage?: string;
   createdAt: string;
   updatedAt: string;
