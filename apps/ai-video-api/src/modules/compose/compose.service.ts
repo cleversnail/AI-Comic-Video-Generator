@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ConfigService } from '@nestjs/config';
@@ -32,7 +32,7 @@ export class ComposeService {
       include: { shots: { orderBy: { sequence: 'asc' } } },
     });
 
-    if (!project) throw new Error('项目不存在');
+    if (!project) throw new NotFoundException('项目不存在');
 
     // Build compose input from shots
     const shots = project.shots.map((shot) => ({

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, UploadedFile, UseInterceptors, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Param, UploadedFile, UseInterceptors, UseGuards, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { ScriptImportService, ParsedScript } from './script-import.service';
@@ -20,7 +20,7 @@ export class ScriptImportController {
     @Param('projectId') projectId: string,
     @Body() dto: ImportScriptDto,
   ) {
-    if (!dto.text) throw new Error('请提供剧本文本');
+    if (!dto.text) throw new BadRequestException('请提供剧本文本');
     return this.scriptImportService.parseFromText(userId, projectId, dto.text);
   }
 

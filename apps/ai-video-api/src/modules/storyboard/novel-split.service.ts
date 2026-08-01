@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ModelsService } from '../models/models.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
@@ -42,7 +42,7 @@ export class NovelSplitService {
     await this.verifyProjectAccess(userId, projectId);
 
     if (!novelText || novelText.length < 100) {
-      throw new Error('小说文本过短，至少需要 100 个字符');
+      throw new BadRequestException('小说文本过短，至少需要 100 个字符');
     }
 
     let episodes: Array<{ number: number; title: string; content: string; estimatedDuration: number; wordCount: number }>;

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ModelsService } from '../models/models.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
@@ -113,7 +113,7 @@ export class ScriptAuditService {
       return { data: auditResult };
     } catch (error: any) {
       this.logger.error(`Script audit failed: ${error.message}`);
-      throw new Error(`剧本审计失败: ${error.message}`);
+      throw new BadRequestException(`剧本审计失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
 

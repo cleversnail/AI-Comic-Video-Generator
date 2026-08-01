@@ -1,4 +1,4 @@
-import { Controller, Post, Patch, Body, Param, Get, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Post, Patch, Body, Param, Get, Delete, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { StoryboardService } from './storyboard.service';
 import { StoryboardPreviewService } from './storyboard-preview.service';
@@ -113,7 +113,7 @@ export class StoryboardController {
   ) {
     // Verify project access
     const project = await this.prisma.project.findFirst({ where: { id: projectId, userId } });
-    if (!project) throw new Error('项目不存在');
+    if (!project) throw new NotFoundException('项目不存在');
 
     // Get project context
     const characters = await this.prisma.character.findMany({ where: { projectId } });

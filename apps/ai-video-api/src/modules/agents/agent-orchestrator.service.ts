@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ModelsService } from '../models/models.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
@@ -156,7 +156,7 @@ export class AgentOrchestratorService {
 
   getWorkflow(workflowId: string) {
     const workflow = WORKFLOWS.find((w) => w.id === workflowId);
-    if (!workflow) throw new Error('工作流不存在');
+    if (!workflow) throw new NotFoundException('工作流不存在');
     return { data: workflow };
   }
 
@@ -169,7 +169,7 @@ export class AgentOrchestratorService {
     await this.verifyProjectAccess(userId, projectId);
 
     const workflow = WORKFLOWS.find((w) => w.id === workflowId);
-    if (!workflow) throw new Error('工作流不存在');
+    if (!workflow) throw new NotFoundException('工作流不存在');
 
     const { apiKey, modelId, baseUrl } = await this.modelsService.resolveApiKey(userId, projectId, 'llm');
     const llmAdapter = this.adapterFactory.getLLMAdapter(modelId);
@@ -321,6 +321,6 @@ export class AgentOrchestratorService {
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, userId },
     });
-    if (!project) throw new Error('项目不存在');
+    if (!project) throw new NotFoundException('项目不存在');
   }
 }
