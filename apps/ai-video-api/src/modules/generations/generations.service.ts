@@ -23,6 +23,29 @@ export class GenerationsService {
     // Resolve API Key
     const { apiKey, apiKeyId } = await this.resolveKeyInfo(userId, projectId, dto.capability, dto.modelId);
 
+    // 如果提供了 shotId，获取分镜的 prompt
+    let shotPrompt = '';
+    let shotParams: Record<string, unknown> = {};
+    if (dto.shotId) {
+      const shot = await this.prisma.shot.findFirst({
+        where: { id: dto.shotId, projectId },
+      });
+      if (shot) {
+        shotPrompt = shot.prompt || '';
+        shotParams = (shot.params as Record<string, unknown>) || {};
+      }
+    }
+
+    // 构建 input，包含 prompt 和其他参数
+    const input: Record<string, unknown> = {
+      prompt: shotPrompt,
+      negativePrompt: (shotParams as Record<string, unknown>).negativePrompt || '',
+      firstFrameUrl: (shotParams as Record<string, unknown>).firstFrameUrl || null,
+      duration: dto.parameters?.duration || 5,
+      resolution: dto.parameters?.resolution || '720p',
+      modelId: dto.parameters?.modelId || dto.modelId,
+    };
+
     // Create GenerationTask in DB
     const task = await this.prisma.generationTask.create({
       data: {
@@ -32,6 +55,7 @@ export class GenerationsService {
         modelId: dto.modelId,
         apiKeyId,
         parameters: dto.parameters || {},
+        input: JSON.parse(JSON.stringify(input)),  // 转换为 JSON 兼容格式
         status: 'queued',
       },
     });
@@ -45,7 +69,7 @@ export class GenerationsService {
       capability: dto.capability as any,
       modelId: dto.modelId,
       apiKeyId,
-      input: dto.parameters || {},
+      input,
     });
 
     return { data: task };
