@@ -33,12 +33,11 @@ export class DoubaoVideoAdapter implements VideoAdapter {
 
     try {
       // 火山引擎 CVSync2AsyncSubmitTask 接口
+      // Action 和 Version 作为 Query 参数
       const response = await firstValueFrom(
         this.httpService.post(
-          baseUrl,
+          `${baseUrl}?Action=CVSync2AsyncSubmitTask&Version=2022-08-31`,
           {
-            Action: 'CVSync2AsyncSubmitTask',
-            Version: '2022-08-31',
             ReqKey: 'seedance_2_0_mini_txt2video',
             Prompt: input.prompt || '',
             Duration: input.duration || 5,
@@ -56,6 +55,8 @@ export class DoubaoVideoAdapter implements VideoAdapter {
       );
 
       const data = response.data;
+
+      this.logger.log(`Doubao API response: ${JSON.stringify(data).substring(0, 200)}`);
 
       // 检查响应
       if (data.Code === 0 && data.Data?.task_id) {
@@ -98,10 +99,8 @@ export class DoubaoVideoAdapter implements VideoAdapter {
 
     const response = await firstValueFrom(
       this.httpService.post(
-        baseUrl,
+        `${baseUrl}?Action=CVSync2AsyncGetResult&Version=2022-08-31`,
         {
-          Action: 'CVSync2AsyncGetResult',
-          Version: '2022-08-31',
           ReqKey: 'seedance_2_0_mini_txt2video',
           TaskId: taskId,
         },
@@ -147,10 +146,8 @@ export class DoubaoVideoAdapter implements VideoAdapter {
 
       const response = await firstValueFrom(
         this.httpService.post(
-          baseUrl,
+          `${baseUrl}?Action=CVSync2AsyncGetResult&Version=2022-08-31`,
           {
-            Action: 'CVSync2AsyncGetResult',
-            Version: '2022-08-31',
             ReqKey: 'seedance_2_0_mini_txt2video',
             TaskId: taskId,
           },
