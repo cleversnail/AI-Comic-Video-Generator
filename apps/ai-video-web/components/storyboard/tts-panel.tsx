@@ -32,6 +32,7 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
   const [selectedVoice, setSelectedVoice] = useState('male-qn-qingse');
   const [speed, setSpeed] = useState(1.0);
   const [results, setResults] = useState<Array<{ shotId: string; status: string; audioUrl?: string }>>([]);
+  const [processingShotId, setProcessingShotId] = useState<string | null>(null);
 
   // 检查是否配置了 TTS API Key
   const { data: apiKeys = [] } = useQuery({
@@ -59,23 +60,30 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       setResults(data.results || []);
+      setProcessingShotId(null);
     },
     onError: (error: unknown) => {
       toast.error("批量配音失败", getApiErrorMessage(error));
+      setProcessingShotId(null);
     },
   });
 
   const singleMutation = useMutation({
-    mutationFn: (shotId: string) => storyboardApi.generateTts(projectId, shotId, {
-      voiceId: selectedVoice,
-      speed,
-    }),
+    mutationFn: (shotId: string) => {
+      setProcessingShotId(shotId);
+      return storyboardApi.generateTts(projectId, shotId, {
+        voiceId: selectedVoice,
+        speed,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       toast.success("配音生成成功");
+      setProcessingShotId(null);
     },
     onError: (error: unknown) => {
       toast.error("配音生成失败", getApiErrorMessage(error));
+      setProcessingShotId(null);
     },
   });
 
@@ -228,8 +236,8 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
                     size="sm"
                     variant="outline"
                     onClick={() => singleMutation.mutate(shot.id)}
-                    isLoading={singleMutation.isPending}
-                    disabled={!hasTtsKey}
+                    isLoading={processingShotId === shot.id}
+                    disabled={!hasTtsKey || processingShotId !== null}
                   >
                     {hasAudio ? "重新生成" : "生成配音"}
                   </Button>
