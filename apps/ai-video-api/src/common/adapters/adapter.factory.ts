@@ -4,6 +4,7 @@ import { DeepSeekAdapter } from '../../modules/models/adapters/deepseek.adapter'
 import { FluxAdapter } from '../../modules/models/adapters/flux.adapter';
 import { KlingImageAdapter } from '../../modules/models/adapters/kling-image.adapter';
 import { KlingVideoAdapter } from '../../modules/models/adapters/kling-video.adapter';
+import { DoubaoVideoAdapter } from '../../modules/models/adapters/doubao-video.adapter';
 import { MiniMaxTTSAdapter } from '../../modules/models/adapters/minimax-tts.adapter';
 
 export type CapabilityType = 'llm' | 'image' | 'video' | 'tts' | 'music' | 'sound';
@@ -26,6 +27,7 @@ export class AdapterFactory {
     private readonly fluxAdapter: FluxAdapter,
     private readonly klingImageAdapter: KlingImageAdapter,
     private readonly klingVideoAdapter: KlingVideoAdapter,
+    private readonly doubaoVideoAdapter: DoubaoVideoAdapter,
     private readonly minimaxTTSAdapter: MiniMaxTTSAdapter,
   ) {
     // 注册默认模型
@@ -39,6 +41,8 @@ export class AdapterFactory {
     this.register('kling-video', klingVideoAdapter, 'video');
     this.register('kling-3.0-turbo', klingVideoAdapter, 'video');
     this.register('kling-2.0', klingVideoAdapter, 'video');
+    this.register('doubao', doubaoVideoAdapter, 'video');
+    this.register('seedance', doubaoVideoAdapter, 'video');
     this.register('minimax-tts', minimaxTTSAdapter, 'tts');
 
     // 设置默认 Adapter（当用户自定义模型 ID 未注册时，按 capability 使用默认 Adapter）

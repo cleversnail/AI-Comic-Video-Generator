@@ -163,6 +163,23 @@ const models = [
     billingRule: { unitPrice: 0.08, currency: 'CNY', unit: 'per second' },
   },
   {
+    id: 'seedance',
+    name: 'Seedance 2.0',
+    provider: 'ByteDance',
+    capability: 'video',
+    description: '字节跳动出品的 Seedance 视频生成模型，速度快，适合批量生成。',
+    docUrl: 'https://www.volcengine.com/docs/',
+    pricingUrl: 'https://www.volcengine.com/docs/',
+    apiBaseUrl: '',
+    parameters: [
+      { key: 'duration', name: '时长', type: 'select', defaultValue: 5, options: [{ label: '5秒', value: 5 }, { label: '10秒', value: 10 }] },
+    ],
+    supports: { firstFrame: true },
+    status: 'active',
+    billingUnit: 'second',
+    billingRule: { unitPrice: 0.06, currency: 'CNY', unit: 'per second' },
+  },
+  {
     id: 'elevenlabs',
     name: 'ElevenLabs',
     provider: 'ElevenLabs',
