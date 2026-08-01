@@ -40,8 +40,8 @@ export function EpisodeList({ projectId, selectedEpisodeId, onSelectEpisode }: E
       setNewDescription("");
       toast.success("剧集创建成功");
     },
-    onError: (error: any) => {
-      toast.error("创建失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("创建失败", getApiErrorMessage(error));
     },
   });
 
@@ -52,8 +52,8 @@ export function EpisodeList({ projectId, selectedEpisodeId, onSelectEpisode }: E
       if (onSelectEpisode) onSelectEpisode(null);
       toast.success("剧集已删除");
     },
-    onError: (error: any) => {
-      toast.error("删除失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("删除失败", getApiErrorMessage(error));
     },
   });
 

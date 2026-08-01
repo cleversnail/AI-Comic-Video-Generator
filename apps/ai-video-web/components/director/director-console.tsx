@@ -104,8 +104,8 @@ export function DirectorConsole({ projectId, shots, isOpen, onClose }: DirectorC
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       toast.success("参数已保存");
     },
-    onError: (error: any) => {
-      toast.error("保存失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("保存失败", getApiErrorMessage(error));
     },
   });
 

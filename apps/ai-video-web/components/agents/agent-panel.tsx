@@ -49,8 +49,8 @@ export function AgentPanel({ projectId, isOpen, onClose }: AgentPanelProps) {
       setResult(data);
       toast.success('工作流执行完成');
     },
-    onError: (error: any) => {
-      toast.error('执行失败', error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error('执行失败', getApiErrorMessage(error));
     },
   });
 
@@ -60,8 +60,8 @@ export function AgentPanel({ projectId, isOpen, onClose }: AgentPanelProps) {
       setSingleResult(data.output);
       toast.success('Agent 执行完成');
     },
-    onError: (error: any) => {
-      toast.error('执行失败', error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error('执行失败', getApiErrorMessage(error));
     },
   });
 

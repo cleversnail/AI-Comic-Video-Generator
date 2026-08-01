@@ -93,8 +93,8 @@ export default function StudioPage() {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       toast.success("分镜生成成功");
     },
-    onError: (error: any) => {
-      toast.error("分镜生成失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("分镜生成失败", getApiErrorMessage(error));
     },
   });
   const previewMutation = useMutation({
@@ -103,8 +103,8 @@ export default function StudioPage() {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       toast.success("预览图生成成功");
     },
-    onError: (error: any) => {
-      toast.error("预览图生成失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("预览图生成失败", getApiErrorMessage(error));
     },
   });
   const deleteShotMutation = useMutation({
@@ -113,8 +113,8 @@ export default function StudioPage() {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       toast.success("分镜已删除");
     },
-    onError: (error: any) => {
-      toast.error("删除失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("删除失败", getApiErrorMessage(error));
     },
   });
   const updateShotMutation = useMutation({
@@ -124,8 +124,8 @@ export default function StudioPage() {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       toast.success("分镜已更新");
     },
-    onError: (error: any) => {
-      toast.error("更新失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("更新失败", getApiErrorMessage(error));
     },
   });
 

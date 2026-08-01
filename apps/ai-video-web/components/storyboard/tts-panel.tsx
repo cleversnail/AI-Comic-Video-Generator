@@ -23,8 +23,12 @@ const voiceOptions = [
   { id: 'presenter_female', label: '女主持人', gender: '女' },
 ];
 
+import { useToast } from "@/components/ui/toast";
+import { getApiErrorMessage } from "@/lib/error";
+
 export function TtsPanel({ projectId, shots }: TtsPanelProps) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [selectedVoice, setSelectedVoice] = useState('male-qn-qingse');
   const [speed, setSpeed] = useState(1.0);
   const [results, setResults] = useState<Array<{ shotId: string; status: string; audioUrl?: string }>>([]);
@@ -56,8 +60,8 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
       setResults(data.results || []);
     },
-    onError: (error: any) => {
-      alert(`批量配音失败：${error.message || '请检查 TTS API Key 配置'}`);
+    onError: (error: unknown) => {
+      toast.error("批量配音失败", getApiErrorMessage(error));
     },
   });
 
@@ -68,9 +72,10 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });
+      toast.success("配音生成成功");
     },
-    onError: (error: any) => {
-      alert(`配音生成失败：${error.message || '请检查 TTS API Key 配置'}`);
+    onError: (error: unknown) => {
+      toast.error("配音生成失败", getApiErrorMessage(error));
     },
   });
 

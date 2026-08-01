@@ -67,8 +67,8 @@ export function CharacterDetailPanel({ character: initialCharacter, projectId, o
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
       toast.success("四视图生成成功");
     },
-    onError: (error: any) => {
-      const message = error?.response?.data?.message || error?.message || "请检查是否配置了图像生成模型的 API Key";
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error) || "请检查是否配置了图像生成模型的 API Key";
       toast.error("四视图生成失败", message);
     },
   });
@@ -90,8 +90,8 @@ export function CharacterDetailPanel({ character: initialCharacter, projectId, o
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
       toast.success("变体生成成功");
     },
-    onError: (error: any) => {
-      const message = error?.response?.data?.message || error?.message || "请检查是否配置了图像生成模型的 API Key";
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error) || "请检查是否配置了图像生成模型的 API Key";
       toast.error("变体生成失败", message);
     },
   });

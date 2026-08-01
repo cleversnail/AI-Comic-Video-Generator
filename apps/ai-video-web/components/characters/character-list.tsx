@@ -56,8 +56,8 @@ export function CharacterList({ projectId }: CharacterListProps) {
       setSelectedCharacter(newChar);
       toast.success("角色创建成功");
     },
-    onError: (error: any) => {
-      toast.error("创建失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("创建失败", getApiErrorMessage(error));
     },
   });
 
@@ -69,8 +69,8 @@ export function CharacterList({ projectId }: CharacterListProps) {
       setSelectedCharacter(null);
       toast.success("角色已删除");
     },
-    onError: (error: any) => {
-      toast.error("删除失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("删除失败", getApiErrorMessage(error));
     },
   });
 

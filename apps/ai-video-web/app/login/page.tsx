@@ -4,13 +4,17 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
 
+import { useToast } from "@/components/ui/toast";
+import { getApiErrorMessage } from "@/lib/error";
+
 export default function LoginPage() {
   const router = useRouter();
+  const toast = useToast();
+  const [isRegister, setIsRegister] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Captcha state
@@ -25,9 +29,9 @@ export default function LoginPage() {
       setCaptchaSvg(data.svg);
       setCaptchaText("");
     } catch {
-      setError("获取验证码失败，请刷新重试");
+      toast.error("获取验证码失败", "请刷新重试");
     }
-  }, []);
+  }, [toast]);
 
   // Fetch captcha when switching to register mode
   useEffect(() => {
@@ -38,13 +42,12 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
 
     try {
       if (isRegister) {
         if (!captchaId || !captchaText.trim()) {
-          setError("请输入验证码");
+          toast.error("请输入验证码");
           setLoading(false);
           return;
         }
@@ -59,9 +62,9 @@ export default function LoginPage() {
         await authApi.login({ email, password });
       }
       router.push("/projects");
-    } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(Array.isArray(msg) ? msg[0] : msg || "操作失败，请重试");
+    } catch (err: unknown) {
+      const message = getApiErrorMessage(err);
+      toast.error(isRegister ? "注册失败" : "登录失败", message);
       // Refresh captcha on error for register
       if (isRegister) fetchCaptcha();
     } finally {
@@ -165,12 +168,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {error && (
-              <div className="p-3 rounded-lg bg-warm-orange/10 border border-warm-orange/30 text-warm-orange text-sm">
-                {error}
-              </div>
-            )}
-
             <button
               type="submit"
               disabled={loading}
@@ -182,7 +179,8 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => { setIsRegister(!isRegister); setError(""); }}
+              type="button"
+              onClick={() => { setIsRegister(!isRegister); }}
               className="text-sm text-text-secondary hover:text-anime-purple transition-colors"
             >
               {isRegister ? "已有账号？去登录" : "没有账号？去注册"}

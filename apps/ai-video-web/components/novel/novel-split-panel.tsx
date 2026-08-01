@@ -13,8 +13,12 @@ interface NovelSplitPanelProps {
   onClose: () => void;
 }
 
+import { useToast } from "@/components/ui/toast";
+import { getApiErrorMessage } from "@/lib/error";
+
 export function NovelSplitPanel({ projectId, isOpen, onClose }: NovelSplitPanelProps) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [text, setText] = useState("");
   const [config, setConfig] = useState<NovelSplitConfig>({
     splitByChapter: true,
@@ -27,20 +31,26 @@ export function NovelSplitPanel({ projectId, isOpen, onClose }: NovelSplitPanelP
     onSuccess: (data) => {
       setPreview(data);
     },
+    onError: (error: unknown) => {
+      toast.error("分集预览失败", getApiErrorMessage(error));
+    },
   });
 
   const splitMutation = useMutation({
     mutationFn: () => storyboardApi.executeNovelSplit(projectId, { text, config }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["episodes", projectId] });
-      alert(`成功创建 ${data.totalEpisodes} 集！`);
+      toast.success(`成功创建 ${data.totalEpisodes} 集！`);
       onClose();
+    },
+    onError: (error: unknown) => {
+      toast.error("分集失败", getApiErrorMessage(error));
     },
   });
 
   const handlePreview = () => {
     if (text.length < 100) {
-      alert("文本过短，至少需要 100 个字符");
+      toast.error("文本过短", "至少需要 100 个字符");
       return;
     }
     previewMutation.mutate();
@@ -48,7 +58,7 @@ export function NovelSplitPanel({ projectId, isOpen, onClose }: NovelSplitPanelP
 
   const handleSplit = () => {
     if (!preview) {
-      alert("请先预览分集结果");
+      toast.error("请先预览分集结果");
       return;
     }
     splitMutation.mutate();

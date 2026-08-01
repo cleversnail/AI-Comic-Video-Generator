@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { SparklesIcon, ChevronRightIcon, FilmIcon } from "@/components/icons";
 import { projectsApi, storyboardApi } from "@/lib/api";
 
+import { useToast } from "@/components/ui/toast";
+import { getApiErrorMessage } from "@/lib/error";
+
 const STYLES = [
   { id: "anime", label: "动漫", description: "日系动漫风格" },
   { id: "realistic", label: "写实", description: "真实照片风格" },
@@ -29,6 +32,7 @@ type Step = "character" | "story" | "generating" | "preview";
 
 export default function QuickCreatePage() {
   const router = useRouter();
+  const toast = useToast();
   const [currentStep, setCurrentStep] = useState<Step>("character");
   const [projectName, setProjectName] = useState("");
   const [characterName, setCharacterName] = useState("");
@@ -39,13 +43,15 @@ export default function QuickCreatePage() {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [shots, setShots] = useState<any[]>([]);
 
-  // 创建项目 mutation
   const createProjectMutation = useMutation({
     mutationFn: (data: { name: string; style: string }) =>
       projectsApi.createProject(data),
     onSuccess: (project) => {
       setProjectId(project.id);
       setCurrentStep("story");
+    },
+    onError: (error: unknown) => {
+      toast.error("创建项目失败", getApiErrorMessage(error));
     },
   });
 
@@ -56,6 +62,10 @@ export default function QuickCreatePage() {
     onSuccess: (storyboard) => {
       setShots(storyboard.shots || []);
       setCurrentStep("preview");
+    },
+    onError: (error: unknown) => {
+      toast.error("分镜生成失败", getApiErrorMessage(error));
+      setCurrentStep("story");
     },
   });
 
@@ -73,7 +83,7 @@ export default function QuickCreatePage() {
   const handleNext = () => {
     if (currentStep === "character") {
       if (!projectName.trim()) {
-        alert("请输入项目名称");
+        toast.error("请输入项目名称");
         return;
       }
       createProjectMutation.mutate({
@@ -82,7 +92,7 @@ export default function QuickCreatePage() {
       });
     } else if (currentStep === "story") {
       if (!storyText.trim()) {
-        alert("请输入故事内容");
+        toast.error("请输入故事内容");
         return;
       }
       setCurrentStep("generating");

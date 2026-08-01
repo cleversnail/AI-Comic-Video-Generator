@@ -23,12 +23,16 @@ const ToastContext = createContext<ToastContextType | null>(null);
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line no-console
+      console.warn('[useToast] ToastProvider 未包裹组件，toast 将不会显示');
+    }
     return {
-      toast: (t: any) => alert(`${t.title}${t.message ? '\n' + t.message : ''}`),
-      success: (title: string, message?: string) => alert(`✅ ${title}${message ? '\n' + message : ''}`),
-      error: (title: string, message?: string) => alert(`❌ ${title}${message ? '\n' + message : ''}`),
-      warning: (title: string, message?: string) => alert(`⚠️ ${title}${message ? '\n' + message : ''}`),
-      info: (title: string, message?: string) => alert(`ℹ️ ${title}${message ? '\n' + message : ''}`),
+      toast: () => {},
+      success: () => {},
+      error: () => {},
+      warning: () => {},
+      info: () => {},
     };
   }
   return context;

@@ -11,10 +11,14 @@ import { LoadingState, EmptyState, ErrorState } from "@/components/ui/loading-st
 import { storyboardApi, generationsApi, modelsApi, GenerationTask, Shot } from "@/lib/api";
 import { useTaskProgress, TaskProgress } from "@/lib/websocket";
 
+import { useToast } from "@/components/ui/toast";
+import { getApiErrorMessage } from "@/lib/error";
+
 export default function GeneratePage() {
   const params = useParams();
   const projectId = params.id as string;
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   // WebSocket 任务进度监听
   const handleTaskProgress = useCallback((data: TaskProgress) => {
@@ -65,13 +69,17 @@ export default function GeneratePage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["generation-tasks", projectId] });
+      toast.success("任务已加入生成队列");
+    },
+    onError: (error: unknown) => {
+      toast.error("生成任务创建失败", getApiErrorMessage(error));
     },
   });
 
   // 生成单个分镜
   const handleGenerateShot = (shotId: string) => {
     if (!selectedModel) {
-      alert("请先选择视频模型");
+      toast.error("请先选择视频模型");
       return;
     }
     createTaskMutation.mutate(shotId);
@@ -80,11 +88,11 @@ export default function GeneratePage() {
   // 批量生成所有分镜
   const handleGenerateAll = () => {
     if (!selectedModel) {
-      alert("请先选择视频模型");
+      toast.error("请先选择视频模型");
       return;
     }
     if (!storyboard?.shots?.length) {
-      alert("暂无分镜");
+      toast.error("暂无分镜");
       return;
     }
     storyboard.shots.forEach((shot) => {

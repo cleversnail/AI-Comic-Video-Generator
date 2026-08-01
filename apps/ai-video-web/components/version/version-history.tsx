@@ -31,8 +31,8 @@ export function VersionHistory({ projectId, isOpen, onClose }: VersionHistoryPro
       setLabel("");
       toast.success("版本快照已保存");
     },
-    onError: (error: any) => {
-      toast.error("保存失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("保存失败", getApiErrorMessage(error));
     },
   });
 
@@ -45,8 +45,8 @@ export function VersionHistory({ projectId, isOpen, onClose }: VersionHistoryPro
       toast.success("版本恢复成功", `已恢复到版本 ${data.restoredVersion}（${data.label}）`);
       onClose();
     },
-    onError: (error: any) => {
-      toast.error("恢复失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("恢复失败", getApiErrorMessage(error));
     },
   });
 
@@ -56,8 +56,8 @@ export function VersionHistory({ projectId, isOpen, onClose }: VersionHistoryPro
       queryClient.invalidateQueries({ queryKey: ["versions", projectId] });
       toast.success("版本已删除");
     },
-    onError: (error: any) => {
-      toast.error("删除失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("删除失败", getApiErrorMessage(error));
     },
   });
 

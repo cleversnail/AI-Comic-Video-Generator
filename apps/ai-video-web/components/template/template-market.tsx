@@ -51,8 +51,8 @@ export function TemplateMarket({ isOpen, onClose }: TemplateMarketProps) {
       onClose();
       router.push(`/projects/${project.id}/studio`);
     },
-    onError: (error: any) => {
-      toast.error("复刻失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("复刻失败", getApiErrorMessage(error));
     },
   });
 
@@ -62,8 +62,8 @@ export function TemplateMarket({ isOpen, onClose }: TemplateMarketProps) {
       queryClient.invalidateQueries({ queryKey: ["templates"] });
       queryClient.invalidateQueries({ queryKey: ["templateFavorites"] });
     },
-    onError: (error: any) => {
-      toast.error("操作失败", error?.response?.data?.message || error?.message);
+    onError: (error: unknown) => {
+      toast.error("操作失败", getApiErrorMessage(error));
     },
   });
 
