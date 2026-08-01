@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -163,7 +164,7 @@ export function TemplateMarket({ isOpen, onClose }: TemplateMarketProps) {
                       {/* Cover */}
                       <div className="h-32 bg-gradient-to-br from-anime-purple/20 to-panel-deep flex items-center justify-center">
                         {template.coverUrl ? (
-                          <img src={template.coverUrl} alt={template.name} className="w-full h-full object-cover" />
+                          <Image src={template.coverUrl} alt={template.name} width={300} height={128} className="w-full h-full object-cover" />
                         ) : (
                           <svg className="w-12 h-12 text-text-disabled" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />

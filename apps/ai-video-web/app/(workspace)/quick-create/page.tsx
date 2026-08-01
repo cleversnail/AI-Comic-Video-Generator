@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -295,9 +296,11 @@ export default function QuickCreatePage() {
             <div className="w-full h-full flex flex-col">
               <div className="flex-1 bg-gradient-to-br from-anime-purple/10 to-panel-mid flex items-center justify-center">
                 {shot.imageUrl ? (
-                  <img
+                  <Image
                     src={shot.imageUrl}
                     alt={`Shot ${index + 1}`}
+                    width={200}
+                    height={267}
                     className="w-full h-full object-cover"
                   />
                 ) : (

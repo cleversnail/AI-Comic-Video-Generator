@@ -1,6 +1,7 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Shot } from "@/lib/api";
@@ -20,6 +21,18 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
   const params = currentShot?.params || {};
   const hasAudio = !!params.audioUrl;
 
+  const goToNext = useCallback(() => {
+    if (currentIndex < sortedShots.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+    }
+  }, [currentIndex, sortedShots.length]);
+
+  const goToPrev = useCallback(() => {
+    if (currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
+    }
+  }, [currentIndex]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -38,19 +51,7 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex, sortedShots.length]);
-
-  const goToNext = () => {
-    if (currentIndex < sortedShots.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    }
-  };
-
-  const goToPrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-    }
-  };
+  }, [currentIndex, sortedShots.length, goToNext, goToPrev, onClose]);
 
   const goToShot = (index: number) => {
     setCurrentIndex(index);
@@ -131,9 +132,11 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
                   >
                     <div className="aspect-[3/4] bg-panel-mid relative">
                       {shot.imageUrl ? (
-                        <img
+                        <Image
                           src={shot.imageUrl}
                           alt={`分镜 ${shot.sequence}`}
+                          width={200}
+                          height={267}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -187,9 +190,11 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
             <div className="flex-shrink-0 w-80">
               <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-panel-mid border border-divider shadow-2xl">
                 {currentShot.imageUrl ? (
-                  <img
+                  <Image
                     src={currentShot.imageUrl}
                     alt={`分镜 ${currentShot.sequence}`}
+                    width={320}
+                    height={427}
                     className="w-full h-full object-cover"
                   />
                 ) : (

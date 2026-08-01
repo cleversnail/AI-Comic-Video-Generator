@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -395,9 +396,11 @@ export function CharacterDetailPanel({ character: initialCharacter, projectId, o
                     <label className="block text-xs text-text-secondary text-center">{label}</label>
                     <div className="aspect-square rounded-lg overflow-hidden bg-panel-mid border border-divider">
                       {viewImages[key as keyof typeof viewImages] ? (
-                        <img
-                          src={viewImages[key as keyof typeof viewImages]}
+                        <Image
+                          src={viewImages[key as keyof typeof viewImages] as string}
                           alt={label}
+                          width={200}
+                          height={200}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -450,9 +453,11 @@ export function CharacterDetailPanel({ character: initialCharacter, projectId, o
                     {variants.map((variant) => (
                       <div key={variant.id} className="relative group">
                         <div className="aspect-square rounded-lg overflow-hidden bg-panel-mid border border-divider">
-                          <img
+                          <Image
                             src={variant.imageUrl}
                             alt={variant.description}
+                            width={150}
+                            height={150}
                             className="w-full h-full object-cover"
                           />
                         </div>

@@ -44,7 +44,7 @@ export function DistributePanel({ projectId, isOpen, onClose }: DistributePanelP
         }))
       );
     }
-  }, [platforms]);
+  }, [platforms, selections.length]);
 
   const suggestMutation = useMutation({
     mutationFn: (platformId: string) => composeApi.getSuggestedConfig(projectId, platformId),

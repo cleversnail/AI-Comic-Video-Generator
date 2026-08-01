@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -336,7 +337,7 @@ function ShotCard({ shot, isSelected, onClick }: { shot: Shot; isSelected: boole
     >
       <div className="aspect-[3/4] bg-gradient-to-br from-anime-purple/10 to-panel-mid flex items-center justify-center relative">
         {previewUrl ? (
-          <img src={previewUrl} alt={`Shot ${shot.sequence}`} className="w-full h-full object-cover" />
+          <Image src={previewUrl} alt={`Shot ${shot.sequence}`} width={200} height={267} className="w-full h-full object-cover" />
         ) : shot.status === "generating" ? (
           <div className="w-8 h-8 rounded-full border-2 border-anime-purple border-t-transparent animate-spin" />
         ) : (

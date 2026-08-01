@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { charactersApi } from "@/lib/api";
 
@@ -106,9 +107,11 @@ export function ShotCharacterBinding({
                       >
                         <div className="w-8 h-8 rounded-full bg-panel-mid flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {character.mainImage ? (
-                            <img
+                            <Image
                               src={character.mainImage}
                               alt={character.name}
+                              width={32}
+                              height={32}
                               className="w-full h-full object-cover"
                             />
                           ) : (

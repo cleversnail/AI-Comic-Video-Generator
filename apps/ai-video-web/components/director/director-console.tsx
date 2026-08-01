@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Shot, storyboardApi, UpdateShotDto } from "@/lib/api";
@@ -95,7 +96,7 @@ export function DirectorConsole({ projectId, shots, isOpen, onClose }: DirectorC
         speed: shotParams.speed || 50,
       });
     }
-  }, [currentShot?.id]);
+  }, [currentShot]);
 
   const updateMutation = useMutation({
     mutationFn: (data: UpdateShotDto) =>
@@ -218,7 +219,7 @@ export function DirectorConsole({ projectId, shots, isOpen, onClose }: DirectorC
               <div className="space-y-4">
                 <div className="aspect-[3/4] rounded-xl bg-panel-mid border border-divider overflow-hidden">
                   {currentShot.imageUrl ? (
-                    <img src={currentShot.imageUrl} alt={`Shot ${currentShot.sequence}`} className="w-full h-full object-cover" />
+                    <Image src={currentShot.imageUrl} alt={`Shot ${currentShot.sequence}`} width={400} height={533} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-2">
                       <svg className="w-16 h-16 text-text-disabled" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

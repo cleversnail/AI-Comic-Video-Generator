@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/navigation/back-button";
@@ -236,7 +237,7 @@ export default function GeneratePage() {
                 {/* 分镜预览图 */}
                 <div className="w-16 h-16 rounded-lg bg-panel-mid overflow-hidden flex-shrink-0">
                   {shot.imageUrl ? (
-                    <img src={shot.imageUrl} alt={`Shot ${shot.sequence}`} className="w-full h-full object-cover" />
+                    <Image src={shot.imageUrl} alt={`Shot ${shot.sequence}`} width={64} height={64} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <PlayIcon className="w-6 h-6 text-text-disabled" />

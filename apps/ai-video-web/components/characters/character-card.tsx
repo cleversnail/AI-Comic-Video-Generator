@@ -1,5 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Character } from "@/lib/api";
 
@@ -49,9 +50,11 @@ export function CharacterCard({ character, isSelected, onClick }: CharacterCardP
             {["front", "three_quarter", "side", "back"].map((viewKey) => (
               <div key={viewKey} className="relative overflow-hidden bg-panel-deep">
                 {viewImages[viewKey as keyof typeof viewImages] ? (
-                  <img
-                    src={viewImages[viewKey as keyof typeof viewImages]}
+                  <Image
+                    src={viewImages[viewKey as keyof typeof viewImages] as string}
                     alt={viewLabels[viewKey]}
+                    width={100}
+                    height={100}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -64,9 +67,11 @@ export function CharacterCard({ character, isSelected, onClick }: CharacterCardP
           </div>
         ) : character.mainImage ? (
           // Show main image if no views
-          <img
+          <Image
             src={character.mainImage}
             alt={character.name}
+            width={200}
+            height={200}
             className="w-full h-full object-cover"
           />
         ) : (

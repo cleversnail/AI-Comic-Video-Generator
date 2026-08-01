@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,8 +71,8 @@ export function ShotDetailPanel({
   isGeneratingPreview,
   onClose,
 }: ShotDetailPanelProps) {
-  const params = shot.params || {};
-  const camera = params.camera || {};
+  const params = useMemo(() => shot.params || {}, [shot.params]);
+  const camera = useMemo(() => params.camera || {}, [params.camera]);
 
   const [form, setForm] = useState<UpdateShotDto>({
     title: params.title || `分镜 ${shot.sequence}`,
@@ -106,7 +106,7 @@ export function ShotDetailPanel({
       narration: params.narration || "",
       subtitle: params.subtitle || "",
     });
-  }, [shot.id]);
+  }, [shot, params, camera]);
 
   const handleChange = (field: keyof UpdateShotDto, value: string | number | string[] | undefined) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -119,7 +119,7 @@ export function ShotDetailPanel({
       onUpdate(form);
     }, 1500);
     return () => clearTimeout(timer);
-  }, [form]);
+  }, [form, hasChanges, onUpdate]);
 
   const hasChanges = JSON.stringify(form) !== JSON.stringify({
     title: params.title || `分镜 ${shot.sequence}`,
