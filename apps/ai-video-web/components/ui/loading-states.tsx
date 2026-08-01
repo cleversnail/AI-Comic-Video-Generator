@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "./button";
-import { AlertIcon, ImageIcon, FilmIcon } from "../icons";
+import { AlertIcon, ImageIcon } from "../icons";
 
 // Loading Spinner
 export function LoadingSpinner({ size = "md", className = "" }: { size?: "sm" | "md" | "lg"; className?: string }) {

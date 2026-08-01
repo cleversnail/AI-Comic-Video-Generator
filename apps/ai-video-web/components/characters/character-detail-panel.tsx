@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Character, CharacterVariant, VariantType, charactersApi } from "@/lib/api";
+import { Character, VariantType, charactersApi } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 
 interface CharacterDetailPanelProps {
@@ -52,7 +52,7 @@ export function CharacterDetailPanel({ character: initialCharacter, projectId, o
 
   // Update character mutation
   const updateMutation = useMutation({
-    mutationFn: (data: { field: string; value: any }) =>
+    mutationFn: (data: { field: string; value: unknown }) =>
       charactersApi.updateCharacter(projectId, character.id, { [data.field]: data.value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
@@ -108,7 +108,7 @@ export function CharacterDetailPanel({ character: initialCharacter, projectId, o
   // Update lock level mutation
   const updateLockLevelMutation = useMutation({
     mutationFn: (lockLevel: string) =>
-      charactersApi.updateCharacter(projectId, character.id, { lockLevel: lockLevel as any }),
+      charactersApi.updateCharacter(projectId, character.id, { lockLevel: lockLevel as "loose" | "medium" | "strict" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
     },
@@ -161,7 +161,7 @@ export function CharacterDetailPanel({ character: initialCharacter, projectId, o
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id)}
             className={`flex-1 flex items-center justify-center gap-1 py-3 text-sm transition-colors relative ${
               activeTab === tab.id
                 ? "text-anime-purple border-b-2 border-anime-purple"

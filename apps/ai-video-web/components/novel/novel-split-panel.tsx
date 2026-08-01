@@ -205,7 +205,7 @@ export function NovelSplitPanel({ projectId, isOpen, onClose }: NovelSplitPanelP
                   {previewMutation.isError && (
                     <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
                       <p className="text-sm text-red-400">
-                        分析失败：{(previewMutation.error as any)?.message || "请检查 LLM API Key"}
+                        分析失败：{previewMutation.error?.message || "请检查 LLM API Key"}
                       </p>
                     </div>
                   )}

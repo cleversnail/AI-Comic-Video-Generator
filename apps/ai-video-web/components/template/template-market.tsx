@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { templatesApi, Template } from "@/lib/api";
+import { templatesApi } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 
@@ -29,7 +29,7 @@ export function TemplateMarket({ isOpen, onClose }: TemplateMarketProps) {
   const toast = useToast();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [search, setSearch] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ["templates", selectedCategory, search],

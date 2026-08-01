@@ -108,7 +108,7 @@ export function ShotDetailPanel({
     });
   }, [shot.id]);
 
-  const handleChange = (field: keyof UpdateShotDto, value: any) => {
+  const handleChange = (field: keyof UpdateShotDto, value: string | number | string[] | undefined) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 

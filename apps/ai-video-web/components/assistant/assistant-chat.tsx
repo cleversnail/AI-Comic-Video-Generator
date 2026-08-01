@@ -50,7 +50,7 @@ export function AssistantChat({ projectId, projectName }: AssistantChatProps) {
         { role: "assistant", content: reply, timestamp: new Date() },
       ]);
     },
-    onError: (error: any, message) => {
+    onError: (error: unknown, message) => {
       setMessages((prev) => [
         ...prev,
         { role: "user", content: message, timestamp: new Date() },

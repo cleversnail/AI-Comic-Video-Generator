@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +41,7 @@ export default function QuickCreatePage() {
   const [storyText, setStoryText] = useState("");
   const [selectedStyle, setSelectedStyle] = useState<string>("anime");
   const [projectId, setProjectId] = useState<string | null>(null);
-  const [shots, setShots] = useState<any[]>([]);
+  const [shots, setShots] = useState<Array<{ id: string; imageUrl?: string; prompt?: string }>>([]);
 
   const createProjectMutation = useMutation({
     mutationFn: (data: { name: string; style: string }) =>

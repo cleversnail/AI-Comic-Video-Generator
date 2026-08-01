@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WandIcon, PlayIcon, RefreshCwIcon, FilmIcon } from "@/components/icons";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/loading-states";
-import { storyboardApi, generationsApi, modelsApi, GenerationTask, Shot } from "@/lib/api";
+import { storyboardApi, generationsApi, modelsApi, GenerationTask } from "@/lib/api";
 import { useTaskProgress, TaskProgress } from "@/lib/websocket";
 
 import { useToast } from "@/components/ui/toast";

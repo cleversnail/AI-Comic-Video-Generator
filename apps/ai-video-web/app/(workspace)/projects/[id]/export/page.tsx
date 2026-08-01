@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/navigation/back-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlayIcon, DownloadIcon, LoaderIcon, FilmIcon } from "@/components/icons";
-import { LoadingState, EmptyState, ErrorState } from "@/components/ui/loading-states";
-import { storyboardApi, composeApi, generationsApi, Shot } from "@/lib/api";
+import { EmptyState, ErrorState } from "@/components/ui/loading-states";
+import { storyboardApi, composeApi, generationsApi } from "@/lib/api";
 
 export default function ExportPage() {
   const params = useParams();

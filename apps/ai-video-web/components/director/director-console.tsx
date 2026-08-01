@@ -71,7 +71,7 @@ interface ShotParams {
   mood?: string;
   intensity?: number;
   speed?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function DirectorConsole({ projectId, shots, isOpen, onClose }: DirectorConsoleProps) {
@@ -231,7 +231,7 @@ export function DirectorConsole({ projectId, shots, isOpen, onClose }: DirectorC
                 <div className="p-3 rounded-lg bg-panel-mid border border-divider">
                   <p className="text-sm font-medium text-white mb-1">分镜 {currentShot.sequence}</p>
                   <p className="text-xs text-text-secondary line-clamp-3">{currentShot.prompt || "暂无提示词"}</p>
-                  {(currentShot.params as any)?.dialogue && <p className="text-xs text-anime-purple mt-2">「{(currentShot.params as any).dialogue}」</p>}
+                  {currentShot.params?.dialogue && <p className="text-xs text-anime-purple mt-2">「{currentShot.params.dialogue}」</p>}
                 </div>
                 <div className="grid grid-cols-5 gap-2">
                   {shots.map((shot, index) => (

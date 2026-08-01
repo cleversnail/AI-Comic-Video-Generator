@@ -61,19 +61,6 @@ export function CharacterList({ projectId }: CharacterListProps) {
     },
   });
 
-  // Delete character mutation
-  const deleteMutation = useMutation({
-    mutationFn: (characterId: string) => charactersApi.deleteCharacter(projectId, characterId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["characters", projectId] });
-      setSelectedCharacter(null);
-      toast.success("角色已删除");
-    },
-    onError: (error: unknown) => {
-      toast.error("删除失败", getApiErrorMessage(error));
-    },
-  });
-
   const handleCreate = () => {
     if (!newCharacter.name.trim()) return;
     createMutation.mutate(newCharacter);
@@ -276,7 +263,7 @@ export function CharacterList({ projectId }: CharacterListProps) {
                             ? "border-anime-purple bg-anime-purple/10"
                             : "border-divider hover:border-anime-purple/50"
                         }`}
-                        onClick={() => setNewCharacter({ ...newCharacter, lockLevel: option.value as any })}
+                        onClick={() => setNewCharacter({ ...newCharacter, lockLevel: option.value as "loose" | "medium" | "strict" })}
                       >
                         <span className="text-lg">{option.icon}</span>
                         <p className="text-sm mt-1">{option.label}</p>

@@ -51,7 +51,7 @@ export default function StudioPage() {
         if (draft.prompt) setPrompt(draft.prompt);
         if (draft.selectedCharacterIds) setSelectedCharacterIds(draft.selectedCharacterIds);
         if (draft.activeTab) setActiveTab(draft.activeTab);
-      } catch (e) {
+      } catch {
         // Ignore parse errors
       }
     }
@@ -75,8 +75,8 @@ export default function StudioPage() {
     queryFn: () => modelsApi.listMyApiKeys(),
   });
 
-  const hasLlmKey = apiKeys.some((k: any) => k.capability === "llm");
-  const hasImageKey = apiKeys.some((k: any) => k.capability === "image");
+  const hasLlmKey = apiKeys.some((k: { capability?: string }) => k.capability === "llm");
+  const hasImageKey = apiKeys.some((k: { capability?: string }) => k.capability === "image");
 
   const { data: project } = useQuery({
     queryKey: ["project", projectId],
@@ -118,7 +118,7 @@ export default function StudioPage() {
     },
   });
   const updateShotMutation = useMutation({
-    mutationFn: (data: { shotId: string; data: any }) =>
+    mutationFn: (data: { shotId: string; data: Record<string, unknown> }) =>
       storyboardApi.updateShot(projectId, data.shotId, data.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["storyboard", projectId] });

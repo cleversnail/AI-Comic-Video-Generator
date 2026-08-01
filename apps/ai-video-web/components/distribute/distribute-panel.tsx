@@ -23,7 +23,7 @@ interface PlatformSelection {
 
 export function DistributePanel({ projectId, isOpen, onClose }: DistributePanelProps) {
   const [selections, setSelections] = useState<PlatformSelection[]>([]);
-  const [exportResult, setExportResult] = useState<any>(null);
+  const [exportResult, setExportResult] = useState<unknown>(null);
 
   const { data: platforms = [] } = useQuery({
     queryKey: ["distributePlatforms"],
@@ -80,7 +80,7 @@ export function DistributePanel({ projectId, isOpen, onClose }: DistributePanelP
     );
   };
 
-  const updateSelection = (platformId: string, field: string, value: any) => {
+  const updateSelection = (platformId: string, field: string, value: unknown) => {
     setSelections((prev) =>
       prev.map((s) =>
         s.platform.id === platformId ? { ...s, [field]: value } : s
@@ -147,7 +147,7 @@ export function DistributePanel({ projectId, isOpen, onClose }: DistributePanelP
                     共 {exportResult.totalPlatforms} 个平台，{exportResult.validPlatforms} 个配置有效
                   </p>
                   <div className="mt-2 space-y-1">
-                    {exportResult.results.map((r: any) => (
+                    {exportResult.results.map((r: { platformId: string; platformName: string; validation: { valid: boolean; errors: string[] } }) => (
                       <div key={r.platformId} className="flex items-center gap-2 text-xs">
                         <span className={r.validation.valid ? "text-green-400" : "text-red-400"}>
                           {r.validation.valid ? "✓" : "✗"}

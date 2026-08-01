@@ -62,7 +62,7 @@ export function AuditPanel({ projectId }: AuditPanelProps) {
       {auditMutation.isError && (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-6">
           <p className="text-sm text-red-400">
-            审计失败：{(auditMutation.error as any)?.message || "请检查 LLM API Key 配置"}
+            审计失败：{auditMutation.error?.message || "请检查 LLM API Key 配置"}
           </p>
         </div>
       )}

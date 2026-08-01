@@ -120,8 +120,8 @@ export interface LibraryCharacter {
   outfit?: string;
   prompt?: string;
   mainImage?: string;
-  viewImages?: any;
-  variants?: any;
+  viewImages?: Record<string, string>;
+  variants?: Array<{ id: string; type: string; imageUrl: string; description: string }>;
   lockLevel?: string;
   tags?: string[];
   createdAt: string;
@@ -156,6 +156,10 @@ export interface Shot {
     dialogue?: string;
     narration?: string;
     subtitle?: string;
+    audioUrl?: string;
+    shotType?: string;
+    cameraAngle?: string;
+    lighting?: string;
     camera?: {
       shotSize?: string;
       angle?: string;
@@ -311,7 +315,7 @@ export const projectsApi = {
   listVersions: (id: string) =>
     api.get<{ data: ProjectVersion[] }>(`/projects/${id}/versions`).then((r) => r.data.data),
   getVersion: (id: string, versionId: string) =>
-    api.get<{ data: ProjectVersion & { snapshot: any } }>(`/projects/${id}/versions/${versionId}`).then((r) => r.data.data),
+    api.get<{ data: ProjectVersion & { snapshot: Record<string, unknown> } }>(`/projects/${id}/versions/${versionId}`).then((r) => r.data.data),
   restoreVersion: (id: string, versionId: string) =>
     api.post<{ data: { restoredVersion: number; label: string } }>(`/projects/${id}/versions/${versionId}/restore`).then((r) => r.data.data),
   deleteVersion: (id: string, versionId: string) =>
@@ -451,7 +455,7 @@ export const storyboardApi = {
   previewNovelSplit: (projectId: string, data: { text: string; config?: NovelSplitConfig }) =>
     api.post<{ data: NovelSplitPreview }>(`/projects/${projectId}/storyboard/novel/preview`, data).then((r) => r.data.data),
   executeNovelSplit: (projectId: string, data: { text: string; config?: NovelSplitConfig }) =>
-    api.post<{ data: { totalEpisodes: number; episodes: any[] } }>(`/projects/${projectId}/storyboard/novel/split`, data).then((r) => r.data.data),
+    api.post<{ data: { totalEpisodes: number; episodes: Record<string, unknown>[] } }>(`/projects/${projectId}/storyboard/novel/split`, data).then((r) => r.data.data),
 };
 
 export interface NovelSplitConfig {
@@ -494,7 +498,7 @@ export interface CreateGenerationDto {
   capability: string;
   modelId: string;
   shotId?: string;
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
 }
 
 export const generationsApi = {
@@ -610,7 +614,7 @@ export interface WorkflowResult {
     output?: string;
     error?: string;
   }>;
-  finalOutput?: Record<string, any>;
+  finalOutput?: Record<string, unknown>;
 }
 
 export const composeApi = {
@@ -650,7 +654,7 @@ export const agentsApi = {
     api.get<{ data: Workflow }>(`/projects/${projectId}/agents/workflows/${workflowId}`).then((r) => r.data.data),
   executeWorkflow: (projectId: string, workflowId: string, inputs: Record<string, string>) =>
     api.post<{ data: WorkflowResult }>(`/projects/${projectId}/agents/workflows/${workflowId}/execute`, { inputs }).then((r) => r.data.data),
-  executeAgent: (projectId: string, data: { role: AgentRole; input: string; context?: Record<string, any> }) =>
+  executeAgent: (projectId: string, data: { role: AgentRole; input: string; context?: Record<string, unknown> }) =>
     api.post<{ data: { output: string } }>(`/projects/${projectId}/agents/execute`, data).then((r) => r.data.data),
 };
 

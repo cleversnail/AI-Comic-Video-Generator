@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { agentsApi, WorkflowSummary, WorkflowResult, AgentRole } from "@/lib/api";
+import { agentsApi, WorkflowResult, AgentRole } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 
 interface AgentPanelProps {
@@ -205,7 +205,7 @@ export function AgentPanel({ projectId, isOpen, onClose }: AgentPanelProps) {
                         </p>
                       </div>
 
-                      {result.steps.map((step, index) => (
+                      {result.steps.map((step) => (
                         <div key={step.stepId} className="p-3 rounded-lg bg-panel-mid border border-divider">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">

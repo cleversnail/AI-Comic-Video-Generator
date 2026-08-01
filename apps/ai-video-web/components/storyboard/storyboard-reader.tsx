@@ -18,7 +18,7 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
   const sortedShots = [...shots].sort((a, b) => a.sequence - b.sequence);
   const currentShot = sortedShots[currentIndex];
   const params = currentShot?.params || {};
-  const hasAudio = !!(params as any).audioUrl;
+  const hasAudio = !!params.audioUrl;
 
   // Keyboard navigation
   useEffect(() => {
@@ -209,7 +209,7 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
                   <audio
                     controls
                     className="w-full"
-                    src={(params as any).audioUrl}
+                    src={params.audioUrl}
                   />
                 </div>
               )}
@@ -221,9 +221,9 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
                 <span className="text-xs text-text-disabled font-mono">
                   分镜 {currentShot.sequence}
                 </span>
-                {(params as any).emotion && (
+                {params.emotion && (
                   <Badge variant="default" className="ml-2 text-[10px]">
-                    {(params as any).emotion}
+                    {params.emotion}
                   </Badge>
                 )}
               </div>
@@ -239,7 +239,7 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
               )}
 
               {/* Dialogue */}
-              {(params as any).dialogue && (
+              {params.dialogue && (
                 <div className="mb-4 p-4 rounded-xl bg-panel-mid/50 border border-divider">
                   <p className="text-xs text-text-secondary mb-2 flex items-center gap-2">
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -247,12 +247,12 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
                     </svg>
                     台词
                   </p>
-                  <p className="text-white font-medium">「{(params as any).dialogue}」</p>
+                  <p className="text-white font-medium">「{params.dialogue}」</p>
                 </div>
               )}
 
               {/* Narration */}
-              {(params as any).narration && (
+              {params.narration && (
                 <div className="mb-4 p-4 rounded-xl bg-panel-mid/30 border border-divider">
                   <p className="text-xs text-text-secondary mb-2 flex items-center gap-2">
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -260,33 +260,33 @@ export function StoryboardReader({ shots, onClose }: StoryboardReaderProps) {
                     </svg>
                     旁白
                   </p>
-                  <p className="text-text-secondary italic">{(params as any).narration}</p>
+                  <p className="text-text-secondary italic">{params.narration}</p>
                 </div>
               )}
 
               {/* Subtitle */}
-              {(params as any).subtitle && (
+              {params.subtitle && (
                 <div className="mb-4 p-4 rounded-xl bg-black/40 border border-divider">
                   <p className="text-xs text-text-secondary mb-2">字幕</p>
-                  <p className="text-white text-lg font-medium text-center">{(params as any).subtitle}</p>
+                  <p className="text-white text-lg font-medium text-center">{params.subtitle}</p>
                 </div>
               )}
 
               {/* Camera Info */}
               <div className="flex flex-wrap gap-2 mt-4">
-                {(params as any).shotType && (
+                {params.shotType && (
                   <span className="text-[10px] px-2 py-1 rounded-full bg-anime-purple/20 text-anime-purple border border-anime-purple/30">
-                    {(params as any).shotType}
+                    {params.shotType}
                   </span>
                 )}
-                {(params as any).cameraAngle && (
+                {params.cameraAngle && (
                   <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                    {(params as any).cameraAngle}
+                    {params.cameraAngle}
                   </span>
                 )}
-                {(params as any).lighting && (
+                {params.lighting && (
                   <span className="text-[10px] px-2 py-1 rounded-full bg-warm-orange/20 text-warm-orange border border-warm-orange/30">
-                    {(params as any).lighting}
+                    {params.lighting}
                   </span>
                 )}
                 {currentShot.duration && (

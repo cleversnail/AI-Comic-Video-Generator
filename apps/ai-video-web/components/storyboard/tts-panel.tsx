@@ -38,7 +38,7 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
     queryKey: ["apiKeys"],
     queryFn: () => modelsApi.listMyApiKeys(),
   });
-  const hasTtsKey = apiKeys.some((k: any) => k.capability === "tts");
+  const hasTtsKey = apiKeys.some((k: { capability?: string }) => k.capability === "tts");
 
   // Clear results when shots update
   useEffect(() => {
@@ -181,7 +181,7 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
           <div className="space-y-3">
             {shotsWithText.map((shot, index) => {
               const params = shot.params || {};
-              const hasAudio = !!(params as any).audioUrl;
+              const hasAudio = !!params.audioUrl;
               const batchResult = results.find((r) => r.shotId === shot.id);
 
               return (
@@ -220,7 +220,7 @@ export function TtsPanel({ projectId, shots }: TtsPanelProps) {
                   {/* Audio Player */}
                   {hasAudio && (
                     <audio controls className="h-8 w-40">
-                      <source src={(params as any).audioUrl} type="audio/mp3" />
+                      <source src={params.audioUrl} type="audio/mp3" />
                     </audio>
                   )}
 
