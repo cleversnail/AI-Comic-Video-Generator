@@ -37,6 +37,8 @@ export class AdapterFactory {
     this.register('kling-image', klingImageAdapter, 'image');
     this.register('kling-pro', klingVideoAdapter, 'video');
     this.register('kling-video', klingVideoAdapter, 'video');
+    this.register('kling-3.0-turbo', klingVideoAdapter, 'video');
+    this.register('kling-2.0', klingVideoAdapter, 'video');
     this.register('minimax-tts', minimaxTTSAdapter, 'tts');
 
     // 设置默认 Adapter（当用户自定义模型 ID 未注册时，按 capability 使用默认 Adapter）
