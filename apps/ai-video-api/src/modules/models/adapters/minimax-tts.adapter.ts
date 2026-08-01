@@ -26,22 +26,27 @@ export class MiniMaxTTSAdapter implements TTSAdapter {
 
     try {
       this.logger.log(`Calling MiniMax TTS API: ${baseUrl}/v1/t2a_v2`);
+      this.logger.log(`TTS input: voiceId=${input.voiceId}, speed=${input.speed}, text length=${input.text?.length}`);
+
+      const requestBody = {
+        model: 'speech-01-turbo',
+        text: input.text,
+        voice_setting: {
+          voice_id: input.voiceId || 'male-qn-qingse',
+          speed: input.speed || 1.0,
+        },
+        audio_setting: {
+          format: 'mp3',
+          sample_rate: 32000,
+        },
+      };
+
+      this.logger.log(`MiniMax TTS request body: ${JSON.stringify(requestBody)}`);
 
       const response = await firstValueFrom(
         this.httpService.post(
           `${baseUrl}/v1/t2a_v2`,
-          {
-            model: 'speech-01-turbo',
-            text: input.text,
-            voice_setting: {
-              voice_id: input.voiceId || 'male-qn-qingse',
-              speed: input.speed || 1.0,
-            },
-            audio_setting: {
-              format: 'mp3',
-              sample_rate: 32000,
-            },
-          },
+          requestBody,
           {
             headers: {
               Authorization: `Bearer ${config.apiKey}`,

@@ -32,6 +32,8 @@ export class StoryboardTtsService {
 
     const { apiKey, modelId, baseUrl } = await this.modelsService.resolveApiKey(userId, projectId, 'tts');
 
+    this.logger.log(`TTS generation: voiceId=${voiceId}, speed=${speed}, modelId=${modelId}`);
+
     try {
       const ttsAdapter = this.adapterFactory.getTTSAdapter(modelId);
       const result = await ttsAdapter.generateSpeech(
@@ -43,6 +45,8 @@ export class StoryboardTtsService {
         },
         { apiKey, baseUrl }
       );
+
+      this.logger.log(`TTS result: audioUrl length=${result.audioUrl?.length}, duration=${result.duration}`);
 
       const updatedParams = { ...params, audioUrl: result.audioUrl };
       const updatedDuration = result.duration ? Math.ceil(result.duration * 1000) : shot.duration;
