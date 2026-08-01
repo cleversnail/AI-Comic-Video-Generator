@@ -7,6 +7,7 @@ export interface VideoInput {
   lastFrameUrl?: string;
   duration?: number;
   resolution?: string;
+  modelId?: string;  // 可选的模型 ID，用于覆盖默认值
 }
 
 export interface VideoResult {

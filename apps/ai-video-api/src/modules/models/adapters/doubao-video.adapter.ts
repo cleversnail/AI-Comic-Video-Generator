@@ -33,11 +33,12 @@ export class DoubaoVideoAdapter implements VideoAdapter {
 
     try {
       // Ark 平台视频生成接口
+      // 注意：model 字段需要使用用户在 Ark 平台创建的端点 ID
       const response = await firstValueFrom(
         this.httpService.post(
           `${baseUrl}/contents/generations/tasks`,
           {
-            model: 'seedance-2-0-mini',  // 模型名称
+            model: input.modelId || 'seedance-2-0-mini',  // 使用传入的模型 ID，或默认值
             content: [
               {
                 type: 'text',

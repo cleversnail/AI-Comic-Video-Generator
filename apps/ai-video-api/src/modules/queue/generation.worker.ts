@@ -165,6 +165,7 @@ export class GenerationWorker implements OnModuleInit, OnModuleDestroy {
         lastFrameUrl: input.lastFrameUrl,
         duration: input.duration,
         resolution: input.resolution,
+        modelId: input.modelId,  // 传递模型 ID
       },
       { apiKey, baseUrl }
     );

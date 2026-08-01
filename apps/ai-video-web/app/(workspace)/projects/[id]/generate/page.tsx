@@ -66,7 +66,7 @@ export default function GeneratePage() {
         capability: "video",
         modelId: selectedModel,
         shotId,
-        parameters: { duration, resolution },
+        parameters: { duration, resolution, modelId: selectedModel },  // 将 modelId 也传入 parameters
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["generation-tasks", projectId] });
