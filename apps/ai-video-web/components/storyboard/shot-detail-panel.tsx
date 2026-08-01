@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,34 +98,24 @@ export function ShotDetailPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shot.id]);
 
+  // 用 ref 持有 onUpdate，避免内联函数导致 effect 反复触发
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
+
   const handleChange = (field: keyof UpdateShotDto, value: string | number | string[] | undefined) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const hasChanges = JSON.stringify(form) !== JSON.stringify({
-    title: params.title || `分镜 ${shot.sequence}`,
-    description: params.description || "",
-    prompt: shot.prompt || "",
-    negativePrompt: shot.negativePrompt || "",
-    duration: shot.duration || 3000,
-    shotType: shot.shotType || camera.shotSize || params.shotType || "中景",
-    cameraAngle: shot.cameraAngle || camera.angle || params.cameraAngle || "平视",
-    cameraMovement: camera.movement || params.cameraMovement || "static",
-    emotion: params.emotion || camera.mood || "",
-    lighting: camera.lighting || params.lighting || "soft_light",
-    dialogue: params.dialogue || "",
-    narration: params.narration || "",
-    subtitle: params.subtitle || "",
-  });
+  const hasChanges = JSON.stringify(form) !== JSON.stringify(buildFormFromShot());
 
-  // Auto-save with debounce
+  // Auto-save with debounce（只依赖 form 和 hasChanges，不依赖 onUpdate）
   useEffect(() => {
     if (!hasChanges) return;
     const timer = setTimeout(() => {
-      onUpdate(form);
+      onUpdateRef.current(form);
     }, 1500);
     return () => clearTimeout(timer);
-  }, [form, hasChanges, onUpdate]);
+  }, [form, hasChanges]);
 
   const renderSelectGrid = (
     label: string,
