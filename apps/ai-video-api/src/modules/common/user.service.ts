@@ -1,9 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /**
  * 共享的用户服务
- * TODO: 实现完整 Auth 模块后，移除临时用户创建逻辑
  */
 @Injectable()
 export class UserService {
@@ -20,10 +19,8 @@ export class UserService {
   async ensureUserExists(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      this.logger.log(`Creating temp user ${userId}`);
-      await this.prisma.user.create({
-        data: { id: userId, email: `${userId}@temp.local`, name: '临时用户' },
-      });
+      this.logger.warn(`User ${userId} not found`);
+      throw new UnauthorizedException('用户不存在，请重新登录');
     }
     return userId;
   }

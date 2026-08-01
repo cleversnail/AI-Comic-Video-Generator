@@ -1,9 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserService } from '../common/user.service';
 import { AdapterFactory } from '../../common/adapters/adapter.factory';
+import { CryptoService } from '../common/crypto.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 import { UpdateModelPreferenceDto } from './dto/update-model-preference.dto';
 
@@ -15,7 +14,7 @@ export class ModelsService {
     private readonly prisma: PrismaService,
     private readonly adapterFactory: AdapterFactory,
     private readonly userService: UserService,
-    private readonly configService: ConfigService,
+    private readonly cryptoService: CryptoService,
   ) {}
 
   async listModels(capability?: string) {
@@ -307,28 +306,11 @@ export class ModelsService {
   }
 
   private encryptApiKey(apiKey: string): string {
-    const secret = this.configService.get<string>('JWT_SECRET', 'your-jwt-secret');
-    // Derive a 32-byte key from the secret
-    const key = crypto.scryptSync(secret, 'ai-video-salt', 32);
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-    let encrypted = cipher.update(apiKey, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    const authTag = cipher.getAuthTag().toString('hex');
-    return `${iv.toString('hex')}:${authTag}:${encrypted}`;
+    return this.cryptoService.encrypt(apiKey);
   }
 
   private decryptApiKey(encryptedData: string): string {
-    const secret = this.configService.get<string>('JWT_SECRET', 'your-jwt-secret');
-    const key = crypto.scryptSync(secret, 'ai-video-salt', 32);
-    const [ivHex, authTagHex, encrypted] = encryptedData.split(':');
-    const iv = Buffer.from(ivHex, 'hex');
-    const authTag = Buffer.from(authTagHex, 'hex');
-    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-    decipher.setAuthTag(authTag);
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
+    return this.cryptoService.decrypt(encryptedData);
   }
 
   async resolveApiKey(userId: string, projectId: string, capability: string): Promise<{ apiKey: string; modelId: string; baseUrl?: string }> {

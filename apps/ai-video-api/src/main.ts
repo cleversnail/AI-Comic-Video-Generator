@@ -9,6 +9,14 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // 校验关键环境变量
+  const requiredEnvVars = ['JWT_SECRET', 'DATABASE_URL'];
+  const missing = requiredEnvVars.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    console.error(`❌ 缺少必需的环境变量: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+
   // 使用 Winston 作为全局日志
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 

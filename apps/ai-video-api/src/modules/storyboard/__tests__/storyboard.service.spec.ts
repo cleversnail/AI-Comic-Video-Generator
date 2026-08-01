@@ -61,7 +61,7 @@ describe('StoryboardService', () => {
       ]);
 
       const result = await service.listShots('u1', 'p1');
-      expect(result.data).toHaveLength(1);
+      expect(result.shots).toHaveLength(1);
       expect(mockPrisma.shot.findMany).toHaveBeenCalledWith({
         where: { projectId: 'p1' },
         orderBy: { sequence: 'asc' },
