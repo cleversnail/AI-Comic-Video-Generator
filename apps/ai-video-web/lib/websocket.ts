@@ -1,12 +1,13 @@
 "use client";
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-// WebSocket 单例
+// WebSocket 单例（模块级，配合 StrictMode 通过 ref 在 Provider 中管理）
 let socket: Socket | null = null;
+let connectionCount = 0;
 
 export function getSocket(): Socket | null {
   return socket;
@@ -14,6 +15,7 @@ export function getSocket(): Socket | null {
 
 export function connectSocket(token: string): Socket {
   if (socket?.connected) {
+    connectionCount++;
     return socket;
   }
 
@@ -24,6 +26,8 @@ export function connectSocket(token: string): Socket {
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
   });
+
+  connectionCount = 1;
 
   socket.on('connect', () => {
     console.log('WebSocket connected');
@@ -41,9 +45,11 @@ export function connectSocket(token: string): Socket {
 }
 
 export function disconnectSocket() {
-  if (socket) {
+  connectionCount--;
+  if (connectionCount <= 0 && socket) {
     socket.disconnect();
     socket = null;
+    connectionCount = 0;
   }
 }
 
@@ -59,6 +65,12 @@ export interface TaskProgress {
 
 export function useTaskProgress(projectId: string | undefined, onProgress?: (data: TaskProgress) => void) {
   const queryClient = useQueryClient();
+  const callbackRef = useRef(onProgress);
+
+  // 保持回调引用最新
+  useEffect(() => {
+    callbackRef.current = onProgress;
+  }, [onProgress]);
 
   useEffect(() => {
     if (!socket || !projectId) return;
@@ -74,7 +86,7 @@ export function useTaskProgress(projectId: string | undefined, onProgress?: (dat
       queryClient.invalidateQueries({ queryKey: ['generation-tasks', projectId] });
 
       // 调用回调
-      onProgress?.(data);
+      callbackRef.current?.(data);
     };
 
     socket.on('task:progress', handleTaskProgress);
@@ -83,7 +95,7 @@ export function useTaskProgress(projectId: string | undefined, onProgress?: (dat
       socket?.emit('unsubscribe:project', projectId);
       socket?.off('task:progress', handleTaskProgress);
     };
-  }, [socket, projectId, queryClient, onProgress]);
+  }, [projectId, queryClient]);
 }
 
 // 通知 Hook
@@ -94,12 +106,18 @@ export interface Notification {
 }
 
 export function useNotifications(onNotification?: (data: Notification) => void) {
+  const callbackRef = useRef(onNotification);
+
+  useEffect(() => {
+    callbackRef.current = onNotification;
+  }, [onNotification]);
+
   useEffect(() => {
     if (!socket) return;
 
     const handleNotification = (data: Notification) => {
       console.log('Notification:', data);
-      onNotification?.(data);
+      callbackRef.current?.(data);
     };
 
     socket.on('notification', handleNotification);
@@ -107,7 +125,7 @@ export function useNotifications(onNotification?: (data: Notification) => void) 
     return () => {
       socket?.off('notification', handleNotification);
     };
-  }, [socket, onNotification]);
+  }, []);
 }
 
 // 自动连接 Hook
@@ -120,17 +138,21 @@ export function useSocketConnection() {
     if (token && !socket) {
       const s = connectSocket(token);
 
-      s.on('connect', () => setIsConnected(true));
-      s.on('disconnect', () => setIsConnected(false));
+      const handleConnect = () => setIsConnected(true);
+      const handleDisconnect = () => setIsConnected(false);
+
+      s.on('connect', handleConnect);
+      s.on('disconnect', handleDisconnect);
 
       if (s.connected) {
         setIsConnected(true);
       }
-    }
 
-    return () => {
-      // 不在组件卸载时断开连接，保持全局连接
-    };
+      return () => {
+        s.off('connect', handleConnect);
+        s.off('disconnect', handleDisconnect);
+      };
+    }
   }, []);
 
   return { isConnected, socket: getSocket() };
