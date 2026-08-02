@@ -23,7 +23,7 @@ interface PlatformSelection {
 
 export function DistributePanel({ projectId, isOpen, onClose }: DistributePanelProps) {
   const [selections, setSelections] = useState<PlatformSelection[]>([]);
-  const [exportResult, setExportResult] = useState<unknown>(null);
+  const [exportResult, setExportResult] = useState<Record<string, unknown> | null>(null);
 
   const { data: platforms = [] } = useQuery({
     queryKey: ["distributePlatforms"],
@@ -144,10 +144,10 @@ export function DistributePanel({ projectId, isOpen, onClose }: DistributePanelP
                 <div className="mb-4 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
                   <h4 className="text-sm font-medium text-green-400 mb-2">导出完成</h4>
                   <p className="text-xs text-text-secondary">
-                    共 {exportResult.totalPlatforms} 个平台，{exportResult.validPlatforms} 个配置有效
+                    共 {String((exportResult as Record<string, unknown>).totalPlatforms)} 个平台，{String((exportResult as Record<string, unknown>).validPlatforms)} 个配置有效
                   </p>
                   <div className="mt-2 space-y-1">
-                    {exportResult.results.map((r: { platformId: string; platformName: string; validation: { valid: boolean; errors: string[] } }) => (
+                    {((exportResult as Record<string, unknown>).results as Array<{ platformId: string; platformName: string; validation: { valid: boolean; errors: string[] } }>)?.map((r) => (
                       <div key={r.platformId} className="flex items-center gap-2 text-xs">
                         <span className={r.validation.valid ? "text-green-400" : "text-red-400"}>
                           {r.validation.valid ? "✓" : "✗"}

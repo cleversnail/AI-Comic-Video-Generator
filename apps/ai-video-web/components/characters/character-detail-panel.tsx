@@ -163,7 +163,7 @@ export function CharacterDetailPanel({ character: initialCharacter, projectId, o
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => setActiveTab(tab.id as "info" | "views" | "variants" | "lock")}
             className={`flex-1 flex items-center justify-center gap-1 py-3 text-sm transition-colors relative ${
               activeTab === tab.id
                 ? "text-anime-purple border-b-2 border-anime-purple"

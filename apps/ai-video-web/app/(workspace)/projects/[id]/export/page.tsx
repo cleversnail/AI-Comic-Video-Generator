@@ -29,7 +29,7 @@ export default function ExportPage() {
   const [exportFormat, setExportFormat] = useState("mp4");
   const [exportQuality, setExportQuality] = useState("1080p");
   const [isExporting, setIsExporting] = useState(false);
-  const [exportResult, setExportResult] = useState<{ outputUrl?: string } | null>(null);
+  const [exportResult, setExportResult] = useState<Record<string, string | number | boolean | null> | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
 
   // 合成导出 mutation
@@ -41,7 +41,7 @@ export default function ExportPage() {
       setExportError(null);
     },
     onSuccess: (data) => {
-      setExportResult(data);
+      setExportResult(data as unknown as Record<string, string | number | boolean | null>);
       setIsExporting(false);
     },
     onError: (error: Error) => {
@@ -120,7 +120,7 @@ export default function ExportPage() {
           <div className="absolute inset-0 bg-gradient-to-br from-anime-purple/10 to-neon-cyan/5" />
           {exportResult?.outputUrl ? (
             <video
-              src={exportResult.outputUrl}
+              src={exportResult.outputUrl as string}
               controls
               className="w-full h-full object-contain relative z-10"
             />
@@ -235,11 +235,11 @@ export default function ExportPage() {
                 <CardTitle>导出完成</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button className="w-full gap-2" asChild>
-                  <a href={exportResult.outputUrl} download target="_blank" rel="noopener noreferrer">
+                <a href={exportResult.outputUrl as string} download target="_blank" rel="noopener noreferrer" className="w-full">
+                  <Button className="w-full gap-2">
                     <DownloadIcon className="w-4 h-4" /> 下载视频
-                  </a>
-                </Button>
+                  </Button>
+                </a>
               </CardContent>
             </Card>
           )}

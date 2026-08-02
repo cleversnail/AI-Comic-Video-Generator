@@ -288,7 +288,7 @@ export default function StudioPage() {
                 <ShotDetailPanel
                   shot={selectedShot}
                   projectId={projectId}
-                  onUpdate={(data) => updateShotMutation.mutate({ shotId: selectedShot.id, data })}
+                  onUpdate={(data) => updateShotMutation.mutate({ shotId: selectedShot.id, data: data as Record<string, unknown> })}
                   onDelete={() => {
                     if (confirm("确认删除此分镜？")) {
                       deleteShotMutation.mutate(selectedShot.id);

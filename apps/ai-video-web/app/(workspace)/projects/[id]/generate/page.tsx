@@ -176,7 +176,7 @@ export default function GeneratePage() {
                 onChange={(e) => setSelectedModel(e.target.value)}
               >
                 {videoModels.length === 0 && <option value="">暂无可用模型</option>}
-                {videoModels.map((model) => (
+                {videoModels.map((model: { id: string; name: string }) => (
                   <option key={model.id} value={model.id}>{model.name}</option>
                 ))}
               </select>
@@ -264,11 +264,11 @@ export default function GeneratePage() {
 
                 {/* 操作按钮 */}
                 {status === "completed" && task?.result?.url ? (
-                  <Button size="sm" variant="outline" className="gap-1" asChild>
-                    <a href={task.result.url} target="_blank" rel="noopener noreferrer">
+                  <a href={task.result.url} target="_blank" rel="noopener noreferrer">
+                    <Button size="sm" variant="outline" className="gap-1">
                       <PlayIcon className="w-3 h-3" /> 预览
-                    </a>
-                  </Button>
+                    </Button>
+                  </a>
                 ) : status === "failed" ? (
                   <Button size="sm" variant="outline" className="gap-1" onClick={() => handleGenerateShot(shot.id)}>
                     <RefreshCwIcon className="w-3 h-3" /> 重试

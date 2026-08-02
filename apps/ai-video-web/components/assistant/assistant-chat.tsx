@@ -56,7 +56,7 @@ export function AssistantChat({ projectId, projectName }: AssistantChatProps) {
         { role: "user", content: message, timestamp: new Date() },
         {
           role: "assistant",
-          content: `抱歉，发生了错误：${error.message || "请检查 LLM API Key 配置"}`,
+          content: `抱歉，发生了错误：${(error as Error).message || "请检查 LLM API Key 配置"}`,
           timestamp: new Date(),
         },
       ]);
