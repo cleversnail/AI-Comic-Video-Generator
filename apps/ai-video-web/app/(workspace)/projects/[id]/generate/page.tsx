@@ -48,16 +48,31 @@ export default function GeneratePage() {
     queryFn: () => modelsApi.listModels("video"),
   });
 
+  // 获取用户的 API Keys
+  const { data: apiKeys = [] } = useQuery({
+    queryKey: ["apiKeys"],
+    queryFn: () => modelsApi.listMyApiKeys(),
+  });
+
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [duration, setDuration] = useState(3);
   const [resolution, setResolution] = useState("1080p");
 
-  // 设置默认模型
+  // 设置默认模型 - 优先使用用户已配置的视频模型
   useEffect(() => {
     if (videoModels.length > 0 && !selectedModel) {
-      setSelectedModel(videoModels[0].id);
+      // 查找用户已配置的视频模型
+      const configuredVideoKey = apiKeys.find((k: { capability?: string; modelId: string }) =>
+        k.capability === "video" && videoModels.some((m: { id: string }) => m.id === k.modelId)
+      );
+
+      if (configuredVideoKey) {
+        setSelectedModel(configuredVideoKey.modelId);
+      } else {
+        setSelectedModel(videoModels[0].id);
+      }
     }
-  }, [videoModels, selectedModel]);
+  }, [videoModels, apiKeys, selectedModel]);
 
   // 创建生成任务的 mutation
   const createTaskMutation = useMutation({

@@ -158,6 +158,58 @@ export default function ModelsPage() {
         <CostPanel />
       </div>
 
+      {/* API Key 使用详情 */}
+      <div className="mb-8">
+        <h2 className="font-display text-xl font-bold text-white mb-4">API Key 使用详情</h2>
+        {apiKeys.length === 0 ? (
+          <div className="p-6 rounded-xl bg-panel-deep border border-divider text-center">
+            <p className="text-text-secondary">暂未配置任何 API Key</p>
+            <p className="text-xs text-text-disabled mt-1">请在下方模型配置区域配置至少一个 API Key</p>
+          </div>
+        ) : (
+          <div className="rounded-xl bg-panel-deep border border-divider overflow-hidden">
+            <div className="grid grid-cols-12 gap-4 p-4 border-b border-divider text-xs font-medium text-text-secondary">
+              <div className="col-span-3">模型</div>
+              <div className="col-span-2">能力</div>
+              <div className="col-span-2">Key 脱敏</div>
+              <div className="col-span-2">状态</div>
+              <div className="col-span-2">调用次数</div>
+              <div className="col-span-1">操作</div>
+            </div>
+            {apiKeys.map((key: UserApiKey & { modelName?: string; capability?: string }) => (
+              <div key={key.id} className="grid grid-cols-12 gap-4 p-4 border-b border-divider last:border-b-0 items-center">
+                <div className="col-span-3">
+                  <p className="text-sm font-medium text-white">{key.modelName || key.modelId}</p>
+                  <p className="text-xs text-text-secondary">{key.alias}</p>
+                </div>
+                <div className="col-span-2">
+                  <Badge variant="info" className="text-[10px]">
+                    {capabilityConfig[key.capability as keyof typeof capabilityConfig]?.name || key.capability}
+                  </Badge>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-xs font-mono text-text-secondary">{key.keyMask}</span>
+                </div>
+                <div className="col-span-2">
+                  <Badge variant={key.status === "valid" ? "success" : "warning"}>{key.status === "valid" ? "有效" : "无效"}</Badge>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-sm text-text-secondary">{key.totalCalls || 0} 次</span>
+                </div>
+                <div className="col-span-1">
+                  <Button size="sm" variant="ghost" className="text-xs text-warm-orange" onClick={() => {
+                    const model = models.find((m) => m.id === key.modelId);
+                    if (model) handleOpenConfig(model);
+                  }}>
+                    编辑
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <h2 className="font-display text-xl font-bold text-white mb-6">模型配置</h2>
       {modelsLoading || keysLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">{[1, 2, 3].map((i) => <Card key={i} className="h-48 animate-pulse bg-panel-deep" />)}</div>

@@ -40,7 +40,18 @@ export interface AuthResponse {
 
 export interface AIModel { id: string; name: string; provider: string; capability: string; description?: string; docUrl?: string; billingRule?: { unitPrice: number; currency: string; unit: string }; parameters?: ModelParameter[]; }
 export interface ModelParameter { key: string; name: string; type: "string"|"number"|"select"; defaultValue?: unknown; options?: { label: string; value: unknown }[]; min?: number; max?: number; }
-export interface UserApiKey { id: string; modelId: string; keyMask: string; alias?: string; isDefault: boolean; capability?: string; }
+export interface UserApiKey {
+  id: string;
+  modelId: string;
+  modelName?: string;
+  keyMask: string;
+  alias?: string;
+  isDefault: boolean;
+  capability?: string;
+  status?: string;
+  totalCalls?: number;
+  estimatedCost?: number;
+}
 export interface Project { id: string; name: string; description?: string; status: "draft"|"in_progress"|"completed"; style?: string; aspectRatio?: string; shotCount?: number; characterCount?: number; createdAt: string; updatedAt: string; characters?: Character[]; storyboard?: { id: string; shots: Shot[] }; shots?: Shot[]; }
 export interface CreateProjectDto { name: string; description?: string; style?: string; aspectRatio?: string; }
 export interface ModelPreferenceConfig { modelId: string; apiKeyId?: string; parameters?: Record<string, unknown>; }
