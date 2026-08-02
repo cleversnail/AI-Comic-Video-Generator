@@ -110,8 +110,16 @@ export default function ModelsPage() {
   const handleOpenConfig = (model: AIModel) => {
     setConfiguringModel(model);
     const existingKey = apiKeys.find((k: UserApiKey) => k.modelId === model.id);
-    if (existingKey) { setEditingKeyId(existingKey.id); setAlias(existingKey.alias || ""); } else { setEditingKeyId(null); setAlias(""); }
-    setApiKey("");
+    if (existingKey) {
+      setEditingKeyId(existingKey.id);
+      setAlias(existingKey.alias || "");
+      // 显示脱敏的 API Key，提示用户这是已配置的 Key
+      setApiKey(existingKey.keyMask || "");
+    } else {
+      setEditingKeyId(null);
+      setAlias("");
+      setApiKey("");
+    }
   };
 
   const handleSave = () => {
@@ -119,10 +127,13 @@ export default function ModelsPage() {
     if (editingKeyId) {
       const data: { apiKey?: string; alias?: string } = {};
       if (alias.trim()) data.alias = alias.trim();
-      if (apiKey.trim()) data.apiKey = apiKey.trim();
+      // 只有当 API Key 不是脱敏格式时才更新（避免用脱敏值覆盖真实 Key）
+      if (apiKey.trim() && !apiKey.includes("****")) {
+        data.apiKey = apiKey.trim();
+      }
       updateKeyMutation.mutate({ id: editingKeyId, data });
     } else {
-      if (!apiKey.trim()) return;
+      if (!apiKey.trim() || apiKey.includes("****")) return;
       createKeyMutation.mutate({ modelId: configuringModel.id, apiKey: apiKey.trim(), alias: alias.trim() || `${configuringModel.name} Key`, isDefault: true });
     }
   };
@@ -289,7 +300,18 @@ export default function ModelsPage() {
                 </div>
                 <ParameterFields parameters={configuringModel.parameters as ModelParameter[] | undefined} />
                 <div className="space-y-4">
-                  <div><label className="block text-sm font-medium text-text-secondary mb-2">API Key</label><Input type="password" placeholder={editingKeyId ? "留空则不更新" : "sk-..."} value={apiKey} onChange={(e) => setApiKey(e.target.value)} /></div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-2">API Key</label>
+                    <Input
+                      type={editingKeyId && apiKey.includes("****") ? "text" : "password"}
+                      placeholder={editingKeyId ? "已配置的 Key（留空则不更新）" : "sk-..."}
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                    />
+                    {editingKeyId && apiKey.includes("****") && (
+                      <p className="text-[10px] text-text-disabled mt-1">当前显示的是脱敏后的 Key，如需更新请输入新的完整 Key</p>
+                    )}
+                  </div>
                   <div><label className="block text-sm font-medium text-text-secondary mb-2">Key 别名</label><Input placeholder="例如：我的主 Key" value={alias} onChange={(e) => setAlias(e.target.value)} /></div>
                 </div>
                 <div className="p-4 rounded-lg bg-panel-mid/50 border border-divider">
