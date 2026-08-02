@@ -182,36 +182,32 @@ export default function ModelsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="p-6 space-y-4">
-                  {Object.entries(capabilities).map(([capability, models]) => {
-                    const cap = capabilityConfig[capability];
-                    if (!cap) return null;
-                    return (
-                      <div key={capability} className="space-y-3">
-                        <div className="flex items-center gap-2"><span className="text-lg">{cap.icon}</span><h4 className="text-sm font-medium text-white">{cap.name}</h4><span className="text-xs text-text-secondary">· {cap.description}</span></div>
-                        <div className="flex flex-wrap gap-3">
-                          {models.map((model) => {
-                            const { status, keyMask } = getStatus(model.id, apiKeys);
-                            return (
-                              <motion.div key={model.id} whileHover={{ scale: 1.02 }} className="w-[calc(33.333%-8px)] min-w-[280px] p-4 rounded-lg bg-panel-mid border border-divider hover:border-anime-purple/30 transition-all cursor-pointer" onClick={() => handleOpenConfig(model)}>
-                                <div className="flex items-start justify-between mb-2">
-                                  <div className="flex-1"><p className="text-sm font-medium text-white">{model.name}</p><p className="text-xs text-text-secondary line-clamp-2 mt-1">{model.description}</p></div>
-                                  <Badge variant={status === "configured" ? "success" : "warning"} className="ml-2 flex-shrink-0">{status === "configured" ? "已配置" : "未配置"}</Badge>
-                                </div>
-                                {status === "configured" && keyMask && (
-                                  <div className="flex items-center gap-2 mt-2 px-2 py-1.5 rounded bg-panel-deep border border-divider"><CheckIcon className="w-3 h-3 text-neon-cyan" /><span className="text-xs text-text-secondary font-mono">{keyMask}</span></div>
-                                )}
-                                <div className="flex items-center justify-between mt-3">
-                                  <span className="text-xs text-text-disabled">{formatPrice(model.billingRule)}</span>
-                                  <Button size="sm" variant={status === "configured" ? "secondary" : "primary"} className="text-xs" onClick={(e) => { e.stopPropagation(); handleOpenConfig(model); }}>{status === "configured" ? "编辑" : "配置"}</Button>
-                                </div>
-                              </motion.div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="p-6">
+                  <div className="flex flex-wrap gap-3">
+                    {allModels.map((model) => {
+                      const { status, keyMask } = getStatus(model.id, apiKeys);
+                      const cap = capabilityConfig[model.capability];
+                      return (
+                        <motion.div key={model.id} whileHover={{ scale: 1.02 }} className="flex-1 min-w-[250px] max-w-[350px] p-4 rounded-lg bg-panel-mid border border-divider hover:border-anime-purple/30 transition-all cursor-pointer" onClick={() => handleOpenConfig(model)}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-base">{cap?.icon || '🤖'}</span>
+                            <Badge variant={status === "configured" ? "success" : "warning"} className="text-[10px]">{cap?.name || model.capability}</Badge>
+                          </div>
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1"><p className="text-sm font-medium text-white">{model.name}</p><p className="text-xs text-text-secondary line-clamp-2 mt-1">{model.description}</p></div>
+                            <Badge variant={status === "configured" ? "success" : "warning"} className="ml-2 flex-shrink-0">{status === "configured" ? "已配置" : "未配置"}</Badge>
+                          </div>
+                          {status === "configured" && keyMask && (
+                            <div className="flex items-center gap-2 mt-2 px-2 py-1.5 rounded bg-panel-deep border border-divider"><CheckIcon className="w-3 h-3 text-neon-cyan" /><span className="text-xs text-text-secondary font-mono">{keyMask}</span></div>
+                          )}
+                          <div className="flex items-center justify-between mt-3">
+                            <span className="text-xs text-text-disabled">{formatPrice(model.billingRule)}</span>
+                            <Button size="sm" variant={status === "configured" ? "secondary" : "primary"} className="text-xs" onClick={(e) => { e.stopPropagation(); handleOpenConfig(model); }}>{status === "configured" ? "编辑" : "配置"}</Button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
                 </div>
               </motion.div>
             );
