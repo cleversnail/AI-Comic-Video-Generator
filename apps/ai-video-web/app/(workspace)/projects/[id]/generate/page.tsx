@@ -58,6 +58,7 @@ export default function GeneratePage() {
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [duration, setDuration] = useState(3);
   const [resolution, setResolution] = useState("1080p");
+  const [previewVideo, setPreviewVideo] = useState<{ url: string; shotId: string } | null>(null);
 
   // 设置默认模型 - 优先使用用户已配置的视频模型
   useEffect(() => {
@@ -258,15 +259,29 @@ export default function GeneratePage() {
             const task = getTaskForShot(shot.id);
             const status = task?.status || "pending";
             const isProcessing = status === "queued" || status === "processing";
+            const hasVideo = status === "completed" && task?.result?.url;
 
             return (
               <div key={shot.id} className="flex items-center gap-4 p-4 rounded-lg bg-panel-deep border border-divider">
                 <span className="text-text-disabled font-mono text-sm w-8">#{shot.sequence}</span>
 
-                {/* 分镜预览图 */}
-                <div className="w-16 h-16 rounded-lg bg-panel-mid overflow-hidden flex-shrink-0">
-                  {shot.imageUrl ? (
-                    <Image src={shot.imageUrl} alt={`Shot ${shot.sequence}`} width={64} height={64} className="w-full h-full object-cover" />
+                {/* 分镜预览图 / 视频缩略图 */}
+                <div className="w-20 h-20 rounded-lg bg-panel-mid overflow-hidden flex-shrink-0 relative group">
+                  {hasVideo ? (
+                    <div className="w-full h-full relative">
+                      <video
+                        src={task!.result!.url!}
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <PlayIcon className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                  ) : shot.imageUrl ? (
+                    <Image src={shot.imageUrl} alt={`Shot ${shot.sequence}`} width={80} height={80} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <PlayIcon className="w-6 h-6 text-text-disabled" />
@@ -276,8 +291,8 @@ export default function GeneratePage() {
 
                 <div className="flex-1">
                   <p className="text-white font-medium">{shot.prompt?.substring(0, 50) || `分镜 ${shot.sequence}`}</p>
-                  {task?.result?.url && (
-                    <p className="text-xs text-neon-cyan mt-1">视频已生成</p>
+                  {hasVideo && (
+                    <p className="text-xs text-neon-cyan mt-1">✓ 视频已生成</p>
                   )}
                   {task?.errorMessage && (
                     <p className="text-xs text-warm-orange mt-1">{task.errorMessage}</p>
@@ -292,12 +307,10 @@ export default function GeneratePage() {
                 </Badge>
 
                 {/* 操作按钮 */}
-                {status === "completed" && task?.result?.url ? (
-                  <a href={task.result.url} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="outline" className="gap-1">
-                      <PlayIcon className="w-3 h-3" /> 预览
-                    </Button>
-                  </a>
+                {hasVideo ? (
+                  <Button size="sm" variant="outline" className="gap-1" onClick={() => setPreviewVideo({ url: task.result!.url!, shotId: shot.id })}>
+                    <PlayIcon className="w-3 h-3" /> 预览
+                  </Button>
                 ) : status === "failed" ? (
                   <Button size="sm" variant="outline" className="gap-1" onClick={() => handleGenerateShot(shot.id)}>
                     <RefreshCwIcon className="w-3 h-3" /> 重试
@@ -310,6 +323,38 @@ export default function GeneratePage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* 视频预览弹窗 */}
+      {previewVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setPreviewVideo(null)}>
+          <div className="relative max-w-4xl w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="rounded-xl overflow-hidden bg-black">
+              <video
+                src={previewVideo.url}
+                controls
+                autoPlay
+                className="w-full max-h-[80vh] object-contain"
+              />
+            </div>
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-white text-sm">
+                分镜 #{shots.find(s => s.id === previewVideo.shotId)?.sequence || '?'} 视频预览
+              </p>
+              <div className="flex gap-2">
+                <a href={previewVideo.url} download target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" variant="outline" className="gap-1">
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                    </svg>
+                    下载
+                  </Button>
+                </a>
+                <Button size="sm" variant="ghost" onClick={() => setPreviewVideo(null)}>关闭</Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
