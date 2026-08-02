@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/navigation/back-button";
@@ -60,18 +61,21 @@ export default function GeneratePage() {
 
   // 设置默认模型 - 优先使用用户已配置的视频模型
   useEffect(() => {
-    if (videoModels.length > 0 && !selectedModel) {
-      // 查找用户已配置的视频模型
-      const configuredVideoKey = apiKeys.find((k: { capability?: string; modelId: string }) =>
-        k.capability === "video" && videoModels.some((m: { id: string }) => m.id === k.modelId)
-      );
+    // 只有当 videoModels 和 apiKeys 都加载完成，且 selectedModel 还没设置时才执行
+    if (videoModels.length === 0 || selectedModel) return;
 
-      if (configuredVideoKey) {
-        setSelectedModel(configuredVideoKey.modelId);
-      } else {
-        setSelectedModel(videoModels[0].id);
-      }
+    // 查找用户已配置的视频模型
+    const configuredVideoKey = apiKeys.find((k: { capability?: string; modelId: string }) =>
+      k.capability === "video" && videoModels.some((m: { id: string }) => m.id === k.modelId)
+    );
+
+    if (configuredVideoKey) {
+      setSelectedModel(configuredVideoKey.modelId);
+    } else if (apiKeys.length > 0) {
+      // apiKeys 已加载但没有配置视频模型，使用第一个可用模型
+      setSelectedModel(videoModels[0].id);
     }
+    // 如果 apiKeys 还没加载（长度为0），不设置默认值，等下次 apiKeys 更新时再执行
   }, [videoModels, apiKeys, selectedModel]);
 
   // 创建生成任务的 mutation
@@ -191,12 +195,22 @@ export default function GeneratePage() {
                 onChange={(e) => setSelectedModel(e.target.value)}
               >
                 {videoModels.length === 0 && <option value="">暂无可用模型</option>}
-                {videoModels.map((model: { id: string; name: string }) => (
-                  <option key={model.id} value={model.id}>{model.name}</option>
-                ))}
+                {videoModels.map((model: { id: string; name: string }) => {
+                  const isConfigured = apiKeys.some((k: { modelId: string }) => k.modelId === model.id);
+                  return (
+                    <option key={model.id} value={model.id}>
+                      {model.name} {isConfigured ? "✓" : ""}
+                    </option>
+                  );
+                })}
               </select>
               {modelsError && (
                 <p className="text-xs text-warm-orange mt-1">加载模型失败</p>
+              )}
+              {selectedModel && !apiKeys.some((k: { modelId: string }) => k.modelId === selectedModel) && (
+                <p className="text-xs text-warm-orange mt-1">
+                  ⚠️ 该模型未配置 API Key，请先<Link href="/settings/models" className="text-anime-purple hover:underline ml-1">配置模型</Link>
+                </p>
               )}
             </div>
             <div>
