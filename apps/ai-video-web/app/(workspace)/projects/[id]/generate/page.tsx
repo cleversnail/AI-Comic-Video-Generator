@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/navigation/back-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { WandIcon, PlayIcon, RefreshCwIcon, FilmIcon } from "@/components/icons";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/loading-states";
 import { storyboardApi, generationsApi, modelsApi, GenerationTask } from "@/lib/api";
@@ -57,6 +58,7 @@ export default function GeneratePage() {
 
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [selectedModelVariant, setSelectedModelVariant] = useState<string>("");
+  const [customModelName, setCustomModelName] = useState<string>("");
   const [duration, setDuration] = useState(3);
   const [resolution, setResolution] = useState("1080p");
   const [previewVideo, setPreviewVideo] = useState<{ url: string; shotId: string } | null>(null);
@@ -64,6 +66,13 @@ export default function GeneratePage() {
   // 获取当前选中模型的参数配置
   const selectedModelData = videoModels.find((m: { id: string }) => m.id === selectedModel);
   const modelVariants = (selectedModelData?.parameters as Array<{ key: string; options?: Array<{ value: string; label: string }> }>)?.find(p => p.key === 'model')?.options || [];
+
+  // 获取实际使用的模型名称（自定义优先）
+  const getActualModelId = () => {
+    if (customModelName.trim()) return customModelName.trim();
+    if (selectedModelVariant) return selectedModelVariant;
+    return selectedModel;
+  };
 
   // 设置默认模型 - 优先使用用户已配置的视频模型
   useEffect(() => {
@@ -98,7 +107,7 @@ export default function GeneratePage() {
         capability: "video",
         modelId: selectedModel,
         shotId,
-        parameters: { duration, resolution, modelId: selectedModelVariant || selectedModel },  // 使用选中的模型变体
+        parameters: { duration, resolution, modelId: getActualModelId() },  // 使用自定义模型名称或选中的模型变体
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["generation-tasks", projectId] });
@@ -231,21 +240,47 @@ export default function GeneratePage() {
             </div>
 
             {/* 模型变体选择 */}
-            {modelVariants.length > 0 && (
-              <div>
-                <label className="block text-sm text-text-secondary mb-1">模型版本</label>
-                <select
-                  className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
-                  value={selectedModelVariant}
-                  onChange={(e) => setSelectedModelVariant(e.target.value)}
-                >
-                  {modelVariants.map((variant) => (
-                    <option key={variant.value} value={variant.value}>{variant.label}</option>
-                  ))}
-                </select>
-                <p className="text-[10px] text-text-disabled mt-1">选择具体使用的模型版本</p>
-              </div>
-            )}
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">模型版本</label>
+              {modelVariants.length > 0 ? (
+                <div className="space-y-2">
+                  <select
+                    className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
+                    value={customModelName ? "__custom__" : selectedModelVariant}
+                    onChange={(e) => {
+                      if (e.target.value === "__custom__") {
+                        // 切换到自定义模式，清空下拉选择
+                        setSelectedModelVariant("");
+                      } else {
+                        setSelectedModelVariant(e.target.value);
+                        setCustomModelName("");  // 选择下拉项时清空自定义输入
+                      }
+                    }}
+                  >
+                    {modelVariants.map((variant) => (
+                      <option key={variant.value} value={variant.value}>{variant.label}</option>
+                    ))}
+                    <option value="__custom__">自定义模型名称...</option>
+                  </select>
+                  <Input
+                    placeholder="输入自定义模型名称，如 Doubao-Seedance-2.0-mini"
+                    value={customModelName}
+                    onChange={(e) => setCustomModelName(e.target.value)}
+                    className="text-sm"
+                  />
+                  <p className="text-[10px] text-text-disabled">
+                    💡 手动输入的模型名称会优先使用，覆盖下拉框选择
+                  </p>
+                </div>
+              ) : (
+                <Input
+                  placeholder="输入模型名称，如 doubao-seedance-2-0-260128"
+                  value={customModelName}
+                  onChange={(e) => setCustomModelName(e.target.value)}
+                  className="text-sm"
+                />
+              )}
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
