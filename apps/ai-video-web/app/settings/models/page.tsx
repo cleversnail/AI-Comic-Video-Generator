@@ -41,7 +41,11 @@ function getStatus(modelId: string, apiKeys: UserApiKey[]) {
   return key ? { status: "configured" as const, keyMask: key.keyMask } : { status: "not_configured" as const, keyMask: null };
 }
 
-function ParameterFields({ parameters }: { parameters?: ModelParameter[] }) {
+function ParameterFields({ parameters, customModelName, onCustomModelNameChange }: {
+  parameters?: ModelParameter[];
+  customModelName?: string;
+  onCustomModelNameChange?: (value: string) => void;
+}) {
   if (!parameters || parameters.length === 0) return null;
   return (
     <div className="space-y-3">
@@ -51,11 +55,27 @@ function ParameterFields({ parameters }: { parameters?: ModelParameter[] }) {
           <label className="block text-xs text-text-secondary mb-1">{param.name}</label>
           {param.type === "select" ? (
             <div className="space-y-2">
-              <select className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white">
+              <select
+                className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
+                value={customModelName ? "__custom__" : String(param.defaultValue || "")}
+                onChange={(e) => {
+                  if (e.target.value !== "__custom__" && onCustomModelNameChange) {
+                    onCustomModelNameChange("");  // 选择下拉项时清空自定义输入
+                  }
+                }}
+              >
                 {param.options?.map((opt) => <option key={String(opt.value)} value={String(opt.value)}>{opt.label}</option>)}
+                <option value="__custom__">
+                  {customModelName ? `✅ 已启用自定义模型: ${customModelName}` : "自定义模型名称..."}
+                </option>
               </select>
-              <Input placeholder="或手动输入模型名称..." className="text-xs" />
-              <p className="text-[10px] text-text-disabled">可从下拉列表选择，或手动输入自定义模型名称</p>
+              <Input
+                placeholder="或手动输入模型名称..."
+                className="text-xs"
+                value={customModelName || ""}
+                onChange={(e) => onCustomModelNameChange?.(e.target.value)}
+              />
+              <p className="text-[10px] text-text-disabled">可从下拉列表选择，或手动输入自定义模型名称（手动输入优先）</p>
             </div>
           ) : param.type === "number" ? (
             <Input type="number" defaultValue={typeof param.defaultValue === "number" ? param.defaultValue : undefined} min={param.min} max={param.max} />
@@ -76,6 +96,7 @@ export default function ModelsPage() {
   const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [alias, setAlias] = useState("");
+  const [customModelName, setCustomModelName] = useState("");
 
   const { data: models = [], isLoading: modelsLoading } = useQuery<AIModel[]>({ queryKey: ["models"], queryFn: () => modelsApi.listModels() as unknown as AIModel[] });
   const { data: apiKeys = [], isLoading: keysLoading } = useQuery<UserApiKey[]>({ queryKey: ["apiKeys"], queryFn: () => modelsApi.listMyApiKeys() as unknown as UserApiKey[] });
@@ -105,7 +126,7 @@ export default function ModelsPage() {
     return acc;
   }, {});
 
-  const closeConfig = () => { setConfiguringModel(null); setEditingKeyId(null); setApiKey(""); setAlias(""); };
+  const closeConfig = () => { setConfiguringModel(null); setEditingKeyId(null); setApiKey(""); setAlias(""); setCustomModelName(""); };
 
   const handleOpenConfig = (model: AIModel) => {
     setConfiguringModel(model);
@@ -115,10 +136,19 @@ export default function ModelsPage() {
       setAlias(existingKey.alias || "");
       // 显示脱敏的 API Key，提示用户这是已配置的 Key
       setApiKey(existingKey.keyMask || "");
+      // 如果别名看起来像模型名称（包含模型相关关键词），则作为自定义模型名
+      const keyAlias = existingKey.alias || "";
+      const isModelName = keyAlias.toLowerCase().includes("seedance") || keyAlias.toLowerCase().includes("doubao") || keyAlias.toLowerCase().includes("kling") || keyAlias.toLowerCase().includes("mini");
+      if (isModelName && keyAlias !== model.id) {
+        setCustomModelName(keyAlias);
+      } else {
+        setCustomModelName("");
+      }
     } else {
       setEditingKeyId(null);
       setAlias("");
       setApiKey("");
+      setCustomModelName("");
     }
   };
 
@@ -298,7 +328,11 @@ export default function ModelsPage() {
                     <a href={configuringModel.docUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-anime-purple hover:underline mt-2">查看官方文档 <ExternalLinkIcon className="w-3 h-3" /></a>
                   )}
                 </div>
-                <ParameterFields parameters={configuringModel.parameters as ModelParameter[] | undefined} />
+                <ParameterFields
+                  parameters={configuringModel.parameters as ModelParameter[] | undefined}
+                  customModelName={customModelName}
+                  onCustomModelNameChange={setCustomModelName}
+                />
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-text-secondary mb-2">API Key</label>
