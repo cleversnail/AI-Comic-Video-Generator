@@ -86,12 +86,6 @@ export default function GeneratePage() {
 
     if (configuredVideoKey) {
       setSelectedModel(configuredVideoKey.modelId);
-      // 如果 API Key 的别名看起来像模型名称（包含模型相关关键词），则作为自定义模型名
-      const alias = configuredVideoKey.alias || "";
-      const isModelName = alias.toLowerCase().includes("seedance") || alias.toLowerCase().includes("doubao") || alias.toLowerCase().includes("kling");
-      if (isModelName && alias !== configuredVideoKey.modelId) {
-        setCustomModelName(alias);
-      }
     } else if (apiKeys.length > 0) {
       // apiKeys 已加载但没有配置视频模型，使用第一个可用模型
       setSelectedModel(videoModels[0].id);
@@ -266,9 +260,7 @@ export default function GeneratePage() {
                     {modelVariants.map((variant) => (
                       <option key={variant.value} value={variant.value}>{variant.label}</option>
                     ))}
-                    <option value="__custom__">
-                      {customModelName ? `✅ 已启用自定义模型: ${customModelName}` : "自定义模型名称..."}
-                    </option>
+                    <option value="__custom__">自定义模型名称...</option>
                   </select>
                   <Input
                     placeholder="输入自定义模型名称，如 Doubao-Seedance-2.0-mini"
