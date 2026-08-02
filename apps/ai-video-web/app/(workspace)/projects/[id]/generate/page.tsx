@@ -56,9 +56,14 @@ export default function GeneratePage() {
   });
 
   const [selectedModel, setSelectedModel] = useState<string>("");
+  const [selectedModelVariant, setSelectedModelVariant] = useState<string>("");
   const [duration, setDuration] = useState(3);
   const [resolution, setResolution] = useState("1080p");
   const [previewVideo, setPreviewVideo] = useState<{ url: string; shotId: string } | null>(null);
+
+  // 获取当前选中模型的参数配置
+  const selectedModelData = videoModels.find((m: { id: string }) => m.id === selectedModel);
+  const modelVariants = (selectedModelData?.parameters as Array<{ key: string; options?: Array<{ value: string; label: string }> }>)?.find(p => p.key === 'model')?.options || [];
 
   // 设置默认模型 - 优先使用用户已配置的视频模型
   useEffect(() => {
@@ -79,6 +84,13 @@ export default function GeneratePage() {
     // 如果 apiKeys 还没加载（长度为0），不设置默认值，等下次 apiKeys 更新时再执行
   }, [videoModels, apiKeys, selectedModel]);
 
+  // 当选中模型变化时，设置默认模型变体
+  useEffect(() => {
+    if (modelVariants.length > 0 && !selectedModelVariant) {
+      setSelectedModelVariant(modelVariants[0].value);
+    }
+  }, [modelVariants, selectedModelVariant]);
+
   // 创建生成任务的 mutation
   const createTaskMutation = useMutation({
     mutationFn: (shotId: string) =>
@@ -86,7 +98,7 @@ export default function GeneratePage() {
         capability: "video",
         modelId: selectedModel,
         shotId,
-        parameters: { duration, resolution, modelId: selectedModel },  // 将 modelId 也传入 parameters
+        parameters: { duration, resolution, modelId: selectedModelVariant || selectedModel },  // 使用选中的模型变体
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["generation-tasks", projectId] });
@@ -187,13 +199,16 @@ export default function GeneratePage() {
           <CardTitle>生成配置</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-text-secondary mb-1">模型</label>
               <select
                 className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
                 value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
+                onChange={(e) => {
+                  setSelectedModel(e.target.value);
+                  setSelectedModelVariant("");  // 切换模型时重置变体
+                }}
               >
                 {videoModels.length === 0 && <option value="">暂无可用模型</option>}
                 {videoModels.map((model: { id: string; name: string }) => {
@@ -214,28 +229,48 @@ export default function GeneratePage() {
                 </p>
               )}
             </div>
-            <div>
-              <label className="block text-sm text-text-secondary mb-1">时长</label>
-              <select
-                className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-              >
-                <option value={3}>3 秒</option>
-                <option value={5}>5 秒</option>
-                <option value={10}>10 秒</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-text-secondary mb-1">分辨率</label>
-              <select
-                className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
-                value={resolution}
-                onChange={(e) => setResolution(e.target.value)}
-              >
-                <option value="1080p">1080p</option>
-                <option value="720p">720p</option>
-              </select>
+
+            {/* 模型变体选择 */}
+            {modelVariants.length > 0 && (
+              <div>
+                <label className="block text-sm text-text-secondary mb-1">模型版本</label>
+                <select
+                  className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
+                  value={selectedModelVariant}
+                  onChange={(e) => setSelectedModelVariant(e.target.value)}
+                >
+                  {modelVariants.map((variant) => (
+                    <option key={variant.value} value={variant.value}>{variant.label}</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-text-disabled mt-1">选择具体使用的模型版本</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-text-secondary mb-1">时长</label>
+                <select
+                  className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
+                  value={duration}
+                  onChange={(e) => setDuration(Number(e.target.value))}
+                >
+                  <option value={3}>3 秒</option>
+                  <option value={5}>5 秒</option>
+                  <option value={10}>10 秒</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-text-secondary mb-1">分辨率</label>
+                <select
+                  className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
+                  value={resolution}
+                  onChange={(e) => setResolution(e.target.value)}
+                >
+                  <option value="1080p">1080p</option>
+                  <option value="720p">720p</option>
+                </select>
+              </div>
             </div>
           </div>
         </CardContent>

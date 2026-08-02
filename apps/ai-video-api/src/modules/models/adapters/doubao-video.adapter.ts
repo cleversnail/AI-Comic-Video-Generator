@@ -52,11 +52,15 @@ export class DoubaoVideoAdapter implements VideoAdapter {
       }
 
       // Ark 平台视频生成接口
+      // 优先使用用户选择的模型，否则使用默认值
+      const modelName = input.modelId || 'doubao-seedance-2-0-260128';
+      this.logger.log(`Using model: ${modelName}`);
+
       const response = await firstValueFrom(
         this.httpService.post(
           `${baseUrl}/contents/generations/tasks`,
           {
-            model: 'doubao-seedance-2-0-260128',  // 使用正确的模型名称
+            model: modelName,
             content,
             generate_audio: false,  // 不生成音频
             ratio: input.resolution === '720p' ? '9:16' : '16:9',  // 根据分辨率设置比例
