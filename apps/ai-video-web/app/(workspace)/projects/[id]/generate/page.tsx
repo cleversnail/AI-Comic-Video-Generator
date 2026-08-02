@@ -58,47 +58,40 @@ export default function GeneratePage() {
 
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [selectedModelVariant, setSelectedModelVariant] = useState<string>("");
-  const [customModelName, setCustomModelName] = useState<string>("");
   const [duration, setDuration] = useState(3);
   const [resolution, setResolution] = useState("1080p");
   const [previewVideo, setPreviewVideo] = useState<{ url: string; shotId: string } | null>(null);
 
-  // 获取当前选中模型的参数配置
-  const selectedModelData = videoModels.find((m: { id: string }) => m.id === selectedModel);
-  const modelVariants = (selectedModelData?.parameters as Array<{ key: string; options?: Array<{ value: string; label: string }> }>)?.find(p => p.key === 'model')?.options || [];
+  // 获取用户已配置的视频模型列表
+  const configuredVideoKeys = apiKeys.filter((k: { capability?: string }) => k.capability === "video");
+  const configuredVideoModels = videoModels.filter((m: { id: string }) =>
+    configuredVideoKeys.some((k: { modelId: string }) => k.modelId === m.id)
+  );
 
-  // 获取实际使用的模型名称（自定义优先）
+  // 获取当前选中模型的别名（用户配置的模型名称）
+  const selectedModelAlias = configuredVideoKeys.find((k: { modelId: string }) => k.modelId === selectedModel)?.alias || "";
+
+  // 获取实际使用的模型名称（使用用户配置的别名）
   const getActualModelId = () => {
-    if (customModelName.trim()) return customModelName.trim();
+    if (selectedModelAlias) return selectedModelAlias;
     if (selectedModelVariant) return selectedModelVariant;
     return selectedModel;
   };
 
   // 设置默认模型 - 优先使用用户已配置的视频模型
   useEffect(() => {
-    // 只有当 videoModels 和 apiKeys 都加载完成，且 selectedModel 还没设置时才执行
-    if (videoModels.length === 0 || selectedModel) return;
+    if (configuredVideoModels.length === 0 || selectedModel) return;
 
-    // 查找用户已配置的视频模型
-    const configuredVideoKey = apiKeys.find((k: { capability?: string; modelId: string }) =>
-      k.capability === "video" && videoModels.some((m: { id: string }) => m.id === k.modelId)
-    );
-
-    if (configuredVideoKey) {
-      setSelectedModel(configuredVideoKey.modelId);
-    } else if (apiKeys.length > 0) {
-      // apiKeys 已加载但没有配置视频模型，使用第一个可用模型
-      setSelectedModel(videoModels[0].id);
-    }
-    // 如果 apiKeys 还没加载（长度为0），不设置默认值，等下次 apiKeys 更新时再执行
-  }, [videoModels, apiKeys, selectedModel]);
+    // 使用第一个已配置的视频模型
+    setSelectedModel(configuredVideoModels[0].id);
+  }, [configuredVideoModels, selectedModel]);
 
   // 当选中模型变化时，设置默认模型变体
   useEffect(() => {
-    if (modelVariants.length > 0 && !selectedModelVariant) {
-      setSelectedModelVariant(modelVariants[0].value);
+    if (selectedModelAlias && !selectedModelVariant) {
+      setSelectedModelVariant(selectedModelAlias);
     }
-  }, [modelVariants, selectedModelVariant]);
+  }, [selectedModelAlias, selectedModelVariant]);
 
   // 创建生成任务的 mutation
   const createTaskMutation = useMutation({
@@ -219,67 +212,40 @@ export default function GeneratePage() {
                   setSelectedModelVariant("");  // 切换模型时重置变体
                 }}
               >
-                {videoModels.length === 0 && <option value="">暂无可用模型</option>}
-                {videoModels.map((model: { id: string; name: string }) => {
-                  const isConfigured = apiKeys.some((k: { modelId: string }) => k.modelId === model.id);
+                {configuredVideoModels.length === 0 && <option value="">暂无已配置模型</option>}
+                {configuredVideoModels.map((model: { id: string; name: string }) => {
+                  const key = configuredVideoKeys.find((k: { modelId: string }) => k.modelId === model.id);
                   return (
                     <option key={model.id} value={model.id}>
-                      {model.name} {isConfigured ? "✓" : ""}
+                      {key?.alias || model.name}
                     </option>
                   );
                 })}
               </select>
-              {modelsError && (
-                <p className="text-xs text-warm-orange mt-1">加载模型失败</p>
-              )}
-              {selectedModel && !apiKeys.some((k: { modelId: string }) => k.modelId === selectedModel) && (
+              {configuredVideoModels.length === 0 && (
                 <p className="text-xs text-warm-orange mt-1">
-                  ⚠️ 该模型未配置 API Key，请先<Link href="/settings/models" className="text-anime-purple hover:underline ml-1">配置模型</Link>
+                  ⚠️ 未配置视频模型，请先<Link href="/settings/models" className="text-anime-purple hover:underline ml-1">配置模型</Link>
                 </p>
               )}
             </div>
 
-            {/* 模型变体选择 */}
+            {/* 模型版本 - 显示用户配置的模型名称 */}
             <div>
               <label className="block text-sm text-text-secondary mb-1">模型版本</label>
-              {modelVariants.length > 0 ? (
-                <div className="space-y-2">
-                  <select
-                    className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
-                    value={customModelName ? "__custom__" : selectedModelVariant}
-                    onChange={(e) => {
-                      if (e.target.value === "__custom__") {
-                        // 切换到自定义模式，清空下拉选择
-                        setSelectedModelVariant("");
-                      } else {
-                        setSelectedModelVariant(e.target.value);
-                        setCustomModelName("");  // 选择下拉项时清空自定义输入
-                      }
-                    }}
-                  >
-                    {modelVariants.map((variant) => (
-                      <option key={variant.value} value={variant.value}>{variant.label}</option>
-                    ))}
-                    <option value="__custom__">自定义模型名称...</option>
-                  </select>
-                  <Input
-                    placeholder="输入自定义模型名称，如 Doubao-Seedance-2.0-mini"
-                    value={customModelName}
-                    onChange={(e) => setCustomModelName(e.target.value)}
-                    className="text-sm"
-                  />
-                  <p className="text-[10px] text-text-disabled">
-                    💡 手动输入的模型名称会优先使用，覆盖下拉框选择
-                  </p>
-                </div>
-              ) : (
-                <Input
-                  placeholder="输入模型名称，如 doubao-seedance-2-0-260128"
-                  value={customModelName}
-                  onChange={(e) => setCustomModelName(e.target.value)}
-                  className="text-sm"
-                />
-              )}
+              <select
+                className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
+                value={selectedModelVariant}
+                onChange={(e) => setSelectedModelVariant(e.target.value)}
+              >
+                {selectedModelAlias ? (
+                  <option value={selectedModelAlias}>{selectedModelAlias}</option>
+                ) : (
+                  <option value="">请选择模型</option>
+                )}
+              </select>
+              <p className="text-[10px] text-text-disabled mt-1">
+                {selectedModelAlias ? "使用配置页面设置的模型名称" : "请先在配置页面设置模型别名"}
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
