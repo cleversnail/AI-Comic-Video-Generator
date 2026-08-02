@@ -57,41 +57,36 @@ export default function GeneratePage() {
   });
 
   const [selectedModel, setSelectedModel] = useState<string>("");
-  const [selectedModelVariant, setSelectedModelVariant] = useState<string>("");
   const [duration, setDuration] = useState(3);
   const [resolution, setResolution] = useState("1080p");
   const [previewVideo, setPreviewVideo] = useState<{ url: string; shotId: string } | null>(null);
 
   // 获取用户已配置的视频模型列表
   const configuredVideoKeys = apiKeys.filter((k: { capability?: string }) => k.capability === "video");
-  const configuredVideoModels = videoModels.filter((m: { id: string }) =>
-    configuredVideoKeys.some((k: { modelId: string }) => k.modelId === m.id)
-  );
 
-  // 获取当前选中模型的别名（用户配置的模型名称）
-  const selectedModelAlias = configuredVideoKeys.find((k: { modelId: string }) => k.modelId === selectedModel)?.alias || "";
+  // 获取当前选中模型的配置信息
+  const selectedModelKey = configuredVideoKeys.find((k: { modelId: string }) => k.modelId === selectedModel);
+  const selectedModelAlias = selectedModelKey?.alias || "";
+  const isModelConfigured = !!selectedModelKey;
 
   // 获取实际使用的模型名称（使用用户配置的别名）
   const getActualModelId = () => {
     if (selectedModelAlias) return selectedModelAlias;
-    if (selectedModelVariant) return selectedModelVariant;
     return selectedModel;
   };
 
   // 设置默认模型 - 优先使用用户已配置的视频模型
   useEffect(() => {
-    if (configuredVideoModels.length === 0 || selectedModel) return;
+    if (videoModels.length === 0 || selectedModel) return;
 
-    // 使用第一个已配置的视频模型
-    setSelectedModel(configuredVideoModels[0].id);
-  }, [configuredVideoModels, selectedModel]);
-
-  // 当选中模型变化时，设置默认模型变体
-  useEffect(() => {
-    if (selectedModelAlias && !selectedModelVariant) {
-      setSelectedModelVariant(selectedModelAlias);
+    // 优先使用已配置的视频模型
+    const configuredModel = configuredVideoKeys.find((k: { capability?: string }) => k.capability === "video");
+    if (configuredModel) {
+      setSelectedModel(configuredModel.modelId);
+    } else {
+      setSelectedModel(videoModels[0].id);
     }
-  }, [selectedModelAlias, selectedModelVariant]);
+  }, [videoModels, configuredVideoKeys, selectedModel]);
 
   // 创建生成任务的 mutation
   const createTaskMutation = useMutation({
@@ -207,24 +202,21 @@ export default function GeneratePage() {
               <select
                 className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
                 value={selectedModel}
-                onChange={(e) => {
-                  setSelectedModel(e.target.value);
-                  setSelectedModelVariant("");  // 切换模型时重置变体
-                }}
+                onChange={(e) => setSelectedModel(e.target.value)}
               >
-                {configuredVideoModels.length === 0 && <option value="">暂无已配置模型</option>}
-                {configuredVideoModels.map((model: { id: string; name: string }) => {
-                  const key = configuredVideoKeys.find((k: { modelId: string }) => k.modelId === model.id);
+                {videoModels.length === 0 && <option value="">暂无可用模型</option>}
+                {videoModels.map((model: { id: string; name: string }) => {
+                  const isConfigured = configuredVideoKeys.some((k: { modelId: string }) => k.modelId === model.id);
                   return (
                     <option key={model.id} value={model.id}>
-                      {key?.alias || model.name}
+                      {model.name} {isConfigured ? "✓" : ""}
                     </option>
                   );
                 })}
               </select>
-              {configuredVideoModels.length === 0 && (
+              {!isModelConfigured && selectedModel && (
                 <p className="text-xs text-warm-orange mt-1">
-                  ⚠️ 未配置视频模型，请先<Link href="/settings/models" className="text-anime-purple hover:underline ml-1">配置模型</Link>
+                  ⚠️ 该模型未配置 API Key，请先<Link href="/settings/models" className="text-anime-purple hover:underline ml-1">配置模型</Link>
                 </p>
               )}
             </div>
@@ -234,17 +226,15 @@ export default function GeneratePage() {
               <label className="block text-sm text-text-secondary mb-1">模型版本</label>
               <select
                 className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
-                value={selectedModelVariant}
-                onChange={(e) => setSelectedModelVariant(e.target.value)}
+                value={selectedModelAlias || selectedModel}
+                disabled
               >
-                {selectedModelAlias ? (
-                  <option value={selectedModelAlias}>{selectedModelAlias}</option>
-                ) : (
-                  <option value="">请选择模型</option>
-                )}
+                <option value={selectedModelAlias || selectedModel}>
+                  {selectedModelAlias || "默认版本"}
+                </option>
               </select>
               <p className="text-[10px] text-text-disabled mt-1">
-                {selectedModelAlias ? "使用配置页面设置的模型名称" : "请先在配置页面设置模型别名"}
+                {selectedModelAlias ? "使用配置页面设置的模型名称" : "使用默认模型版本"}
               </p>
             </div>
 
