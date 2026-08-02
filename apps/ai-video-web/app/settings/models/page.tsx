@@ -189,11 +189,11 @@ export default function ModelsPage() {
                     return (
                       <div key={capability} className="space-y-3">
                         <div className="flex items-center gap-2"><span className="text-lg">{cap.icon}</span><h4 className="text-sm font-medium text-white">{cap.name}</h4><span className="text-xs text-text-secondary">· {cap.description}</span></div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="flex flex-wrap gap-3">
                           {models.map((model) => {
                             const { status, keyMask } = getStatus(model.id, apiKeys);
                             return (
-                              <motion.div key={model.id} whileHover={{ scale: 1.02 }} className="p-4 rounded-lg bg-panel-mid border border-divider hover:border-anime-purple/30 transition-all cursor-pointer" onClick={() => handleOpenConfig(model)}>
+                              <motion.div key={model.id} whileHover={{ scale: 1.02 }} className="w-[calc(33.333%-8px)] min-w-[280px] p-4 rounded-lg bg-panel-mid border border-divider hover:border-anime-purple/30 transition-all cursor-pointer" onClick={() => handleOpenConfig(model)}>
                                 <div className="flex items-start justify-between mb-2">
                                   <div className="flex-1"><p className="text-sm font-medium text-white">{model.name}</p><p className="text-xs text-text-secondary line-clamp-2 mt-1">{model.description}</p></div>
                                   <Badge variant={status === "configured" ? "success" : "warning"} className="ml-2 flex-shrink-0">{status === "configured" ? "已配置" : "未配置"}</Badge>
