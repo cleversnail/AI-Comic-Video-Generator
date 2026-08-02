@@ -196,7 +196,7 @@ export default function GeneratePage() {
           <CardTitle>生成配置</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <div>
               <label className="block text-sm text-text-secondary mb-1">模型</label>
               <select
@@ -216,7 +216,7 @@ export default function GeneratePage() {
               </select>
               {!isModelConfigured && selectedModel && (
                 <p className="text-xs text-warm-orange mt-1">
-                  ⚠️ 该模型未配置 API Key，请先<Link href="/settings/models" className="text-anime-purple hover:underline ml-1">配置模型</Link>
+                  ⚠️ 未配置，请先<Link href="/settings/models" className="text-anime-purple hover:underline ml-1">配置</Link>
                 </p>
               )}
             </div>
@@ -233,35 +233,31 @@ export default function GeneratePage() {
                   {selectedModelAlias || "默认版本"}
                 </option>
               </select>
-              <p className="text-[10px] text-text-disabled mt-1">
-                {selectedModelAlias ? "使用配置页面设置的模型名称" : "使用默认模型版本"}
-              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-text-secondary mb-1">时长</label>
-                <select
-                  className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
-                  value={duration}
-                  onChange={(e) => setDuration(Number(e.target.value))}
-                >
-                  <option value={3}>3 秒</option>
-                  <option value={5}>5 秒</option>
-                  <option value={10}>10 秒</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-text-secondary mb-1">分辨率</label>
-                <select
-                  className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
-                  value={resolution}
-                  onChange={(e) => setResolution(e.target.value)}
-                >
-                  <option value="1080p">1080p</option>
-                  <option value="720p">720p</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">时长</label>
+              <select
+                className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value))}
+              >
+                <option value={3}>3 秒</option>
+                <option value={5}>5 秒</option>
+                <option value={10}>10 秒</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm text-text-secondary mb-1">分辨率</label>
+              <select
+                className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
+                value={resolution}
+                onChange={(e) => setResolution(e.target.value)}
+              >
+                <option value="1080p">1080p</option>
+                <option value="720p">720p</option>
+              </select>
             </div>
           </div>
         </CardContent>
