@@ -50,9 +50,13 @@ function ParameterFields({ parameters }: { parameters?: ModelParameter[] }) {
         <div key={param.key}>
           <label className="block text-xs text-text-secondary mb-1">{param.name}</label>
           {param.type === "select" ? (
-            <select className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white">
-              {param.options?.map((opt) => <option key={String(opt.value)} value={String(opt.value)}>{opt.label}</option>)}
-            </select>
+            <div className="space-y-2">
+              <select className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white">
+                {param.options?.map((opt) => <option key={String(opt.value)} value={String(opt.value)}>{opt.label}</option>)}
+              </select>
+              <Input placeholder="或手动输入模型名称..." className="text-xs" />
+              <p className="text-[10px] text-text-disabled">可从下拉列表选择，或手动输入自定义模型名称</p>
+            </div>
           ) : param.type === "number" ? (
             <Input type="number" defaultValue={typeof param.defaultValue === "number" ? param.defaultValue : undefined} min={param.min} max={param.max} />
           ) : (
