@@ -196,8 +196,8 @@ export default function GeneratePage() {
           <CardTitle>生成配置</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-4">
-            <div>
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
               <label className="block text-sm text-text-secondary mb-1">模型</label>
               <select
                 className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
@@ -222,7 +222,7 @@ export default function GeneratePage() {
             </div>
 
             {/* 模型版本 - 显示用户配置的模型名称 */}
-            <div>
+            <div className="flex-1">
               <label className="block text-sm text-text-secondary mb-1">模型版本</label>
               <select
                 className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
@@ -235,7 +235,7 @@ export default function GeneratePage() {
               </select>
             </div>
 
-            <div>
+            <div className="w-28">
               <label className="block text-sm text-text-secondary mb-1">时长</label>
               <select
                 className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
@@ -248,7 +248,7 @@ export default function GeneratePage() {
               </select>
             </div>
 
-            <div>
+            <div className="w-28">
               <label className="block text-sm text-text-secondary mb-1">分辨率</label>
               <select
                 className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
