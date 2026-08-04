@@ -28,6 +28,8 @@ export class KlingVideoAdapter implements VideoAdapter {
     const baseUrl = config.baseUrl || 'https://api.klingai.com';
 
     try {
+      const aspectRatio = input.aspectRatio || '9:16';
+
       const createResponse = await firstValueFrom(
         this.httpService.post(
           `${baseUrl}/v1/videos/image2video`,
@@ -39,7 +41,7 @@ export class KlingVideoAdapter implements VideoAdapter {
             cfg_scale: 0.5,
             mode: 'std',
             duration: input.duration === 10 ? '10' : '5',
-            aspect_ratio: '9:16',
+            aspect_ratio: aspectRatio,
           },
           { headers: { Authorization: `Bearer ${ak}:${sk}`, 'Content-Type': 'application/json' }, timeout: 30000 }
         )

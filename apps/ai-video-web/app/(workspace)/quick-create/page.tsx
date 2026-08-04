@@ -9,10 +9,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { SparklesIcon, ChevronRightIcon, FilmIcon } from "@/components/icons";
-import { projectsApi, storyboardApi } from "@/lib/api";
+import { projectsApi, charactersApi, storyboardApi } from "@/lib/api";
 
 import { useToast } from "@/components/ui/toast";
 import { getApiErrorMessage } from "@/lib/error";
+
+// 前端风格 ID → 后端风格值映射
+const STYLE_MAP: Record<string, string> = {
+  anime: "动漫",
+  realistic: "写实",
+  comic: "漫画",
+  cyberpunk: "赛博",
+  ancient: "古风",
+};
 
 const STYLES = [
   { id: "anime", label: "动漫", description: "日系动漫风格" },
@@ -42,24 +51,52 @@ export default function QuickCreatePage() {
   const [storyText, setStoryText] = useState("");
   const [selectedStyle, setSelectedStyle] = useState<string>("anime");
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [characterId, setCharacterId] = useState<string | null>(null);
   const [shots, setShots] = useState<Array<{ id: string; imageUrl?: string; prompt?: string }>>([]);
 
-  const createProjectMutation = useMutation({
-    mutationFn: (data: { name: string; style: string }) =>
-      projectsApi.createProject(data),
-    onSuccess: (project) => {
-      setProjectId(project.id);
-      setCurrentStep("story");
-    },
-    onError: (error: unknown) => {
-      toast.error("创建项目失败", getApiErrorMessage(error));
-    },
-  });
+  // Step 1：创建项目 → 创建角色 → 进入故事步骤
+  const handleCreateProjectAndCharacter = async () => {
+    if (!projectName.trim()) {
+      toast.error("请输入项目名称");
+      return;
+    }
 
-  // 生成分镜 mutation
+    try {
+      // 1. 创建项目
+      const project = await projectsApi.createProject({
+        name: projectName,
+        style: STYLE_MAP[selectedStyle] || selectedStyle,
+      });
+      const pid = project.id;
+      setProjectId(pid);
+
+      // 2. 创建角色（角色名称必填，描述可选）
+      if (characterName.trim()) {
+        const character = await charactersApi.createCharacter(pid, {
+          name: characterName.trim(),
+          appearance: characterDescription.trim() || undefined,
+        });
+        setCharacterId(character.id);
+      }
+
+      setCurrentStep("story");
+    } catch (error: unknown) {
+      toast.error("创建项目失败", getApiErrorMessage(error));
+    }
+  };
+
+  // Step 2：保存故事文本到项目 → 生成分镜
   const generateStoryboardMutation = useMutation({
-    mutationFn: (data: { prompt: string }) =>
-      storyboardApi.generate(projectId!, data),
+    mutationFn: async () => {
+      // 先保存故事文本到项目 description
+      if (projectId) {
+        await projectsApi.updateProject(projectId, { description: storyText });
+      }
+      return storyboardApi.generate(projectId!, {
+        prompt: storyText,
+        characterIds: characterId ? [characterId] : undefined,
+      });
+    },
     onSuccess: (storyboard) => {
       setShots(storyboard.shots || []);
       setCurrentStep("preview");
@@ -83,30 +120,21 @@ export default function QuickCreatePage() {
   // 进入下一步
   const handleNext = () => {
     if (currentStep === "character") {
-      if (!projectName.trim()) {
-        toast.error("请输入项目名称");
-        return;
-      }
-      createProjectMutation.mutate({
-        name: projectName,
-        style: selectedStyle,
-      });
+      handleCreateProjectAndCharacter();
     } else if (currentStep === "story") {
       if (!storyText.trim()) {
         toast.error("请输入故事内容");
         return;
       }
       setCurrentStep("generating");
-      generateStoryboardMutation.mutate({
-        prompt: `角色：${characterName}，${characterDescription}\n\n故事：${storyText}`,
-      });
+      generateStoryboardMutation.mutate();
     }
   };
 
-  // 前往 Studio 精修
+  // 前往 Studio 精修（跳转到分镜 Tab）
   const handleGoToStudio = () => {
     if (projectId) {
-      router.push(`/projects/${projectId}/studio`);
+      router.push(`/projects/${projectId}/studio?tab=storyboard`);
     }
   };
 
@@ -318,8 +346,8 @@ export default function QuickCreatePage() {
       </div>
 
       <div className="flex justify-center gap-4">
-        <Button variant="outline" onClick={() => setCurrentStep("character")}>
-          重新创作
+        <Button variant="outline" onClick={() => setCurrentStep("story")}>
+          修改故事重新生成
         </Button>
         <Button className="gap-2" onClick={handleGoToStudio}>
           <SparklesIcon className="w-4 h-4" /> 前往精修
@@ -351,12 +379,21 @@ export default function QuickCreatePage() {
       </Card>
 
       {currentStep !== "generating" && currentStep !== "preview" && (
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-3">
+          {currentStep === "story" && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setCurrentStep("character")}
+            >
+              上一步
+            </Button>
+          )}
           <Button
             size="lg"
             className="gap-2"
             onClick={handleNext}
-            disabled={createProjectMutation.isPending || generateStoryboardMutation.isPending}
+            disabled={generateStoryboardMutation.isPending}
           >
             {currentStep === "character" ? "下一步：输入故事" : "开始生成"}
             <ChevronRightIcon className="w-4 h-4" />

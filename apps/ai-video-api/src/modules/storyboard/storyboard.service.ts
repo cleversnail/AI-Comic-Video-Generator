@@ -84,6 +84,7 @@ export class StoryboardService {
     const systemPrompt = this.buildSystemPrompt(dto.style);
     const userPrompt = this.buildUserPrompt(dto.story, characters);
 
+    // 先调 LLM，成功后再替换旧数据（避免失败时丢失已有分镜）
     let shotsData: any[];
     try {
       const result = await this.callLLM(modelId, apiKey, baseUrl, systemPrompt, userPrompt);
@@ -93,37 +94,41 @@ export class StoryboardService {
       throw new BadRequestException(`分镜生成失败: ${error.message}`);
     }
 
-    await this.prisma.shot.deleteMany({ where: { projectId } });
+    // LLM 成功后，在事务中原子地删除旧分镜 + 创建新分镜
     const storyboard = await this.getOrCreateStoryboard(projectId);
 
-    const shots = await Promise.all(
-      shotsData.map(async (shot, index) => {
-        const shotCharacterIds = this.matchCharactersToShot(shot.characters || [], characters);
-        return this.prisma.shot.create({
-          data: {
-            projectId,
-            storyboardId: storyboard.id,
-            sequence: index + 1,
-            prompt: shot.prompt || '',
-            negativePrompt: shot.negativePrompt || '',
-            duration: shot.duration || 3000,
-            params: {
-              description: shot.description || '',
-              title: shot.title || `分镜 ${index + 1}`,
-              characters: shot.characters || [],
-              characterIds: shotCharacterIds,
-              scene: shot.scene || '',
-              emotion: shot.emotion || '',
-              dialogue: shot.dialogue || '',
-              narration: shot.narration || '',
-              subtitle: shot.subtitle || '',
-              camera: shot.camera || {},
+    const shots = await this.prisma.$transaction(async (tx) => {
+      await tx.shot.deleteMany({ where: { projectId } });
+
+      return Promise.all(
+        shotsData.map(async (shot, index) => {
+          const shotCharacterIds = this.matchCharactersToShot(shot.characters || [], characters);
+          return tx.shot.create({
+            data: {
+              projectId,
+              storyboardId: storyboard.id,
+              sequence: index + 1,
+              prompt: shot.prompt || '',
+              negativePrompt: shot.negativePrompt || '',
+              duration: shot.duration || 3000,
+              params: {
+                description: shot.description || '',
+                title: shot.title || `分镜 ${index + 1}`,
+                characters: shot.characters || [],
+                characterIds: shotCharacterIds,
+                scene: shot.scene || '',
+                emotion: shot.emotion || '',
+                dialogue: shot.dialogue || '',
+                narration: shot.narration || '',
+                subtitle: shot.subtitle || '',
+                camera: shot.camera || {},
+              },
+              status: 'draft',
             },
-            status: 'draft',
-          },
-        });
-      })
-    );
+          });
+        })
+      );
+    });
 
     return { data: shots };
   }

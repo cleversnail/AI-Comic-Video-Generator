@@ -20,6 +20,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
+      window.dispatchEvent(new Event('auth-changed'));
       // Don't redirect if already on login page
       if (!window.location.pathname.includes('login')) {
         window.location.href = '/login';
@@ -209,6 +210,7 @@ export const authApi = {
       const result = r.data.data;
       if (typeof window !== 'undefined') {
         localStorage.setItem('accessToken', result.accessToken);
+        window.dispatchEvent(new Event('auth-changed'));
       }
       return result;
     }),
@@ -217,6 +219,7 @@ export const authApi = {
       const result = r.data.data;
       if (typeof window !== 'undefined') {
         localStorage.setItem('accessToken', result.accessToken);
+        window.dispatchEvent(new Event('auth-changed'));
       }
       return result;
     }),
@@ -225,6 +228,7 @@ export const authApi = {
   logout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
+      window.dispatchEvent(new Event('auth-changed'));
     }
   },
   isLoggedIn: () => {
@@ -319,6 +323,7 @@ export const projectsApi = {
   listProjects: () => api.get<any>("/projects").then((r) => r.data.data),
   getProject: (id: string) => api.get<{ data: Project }>(`/projects/${id}`).then((r) => r.data.data),
   createProject: (data: CreateProjectDto) => api.post<{ data: Project }>("/projects", data).then((r) => r.data.data),
+  updateProject: (id: string, data: Partial<CreateProjectDto>) => api.patch<{ data: Project }>(`/projects/${id}`, data).then((r) => r.data.data),
   deleteProject: (id: string) => api.delete(`/projects/${id}`).then((r) => r.data),
   // Version APIs
   createVersion: (id: string, label?: string) =>

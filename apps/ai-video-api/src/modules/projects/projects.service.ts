@@ -71,6 +71,29 @@ export class ProjectsService {
     return { data: project };
   }
 
+  async updateProject(userId: string, id: string, dto: Partial<CreateProjectDto>) {
+    const project = await this.prisma.project.findFirst({
+      where: { id, userId },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const data: Record<string, unknown> = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.description !== undefined) data.description = dto.description;
+    if (dto.style !== undefined) data.style = dto.style;
+    if (dto.aspectRatio !== undefined) data.aspectRatio = dto.aspectRatio;
+
+    const updated = await this.prisma.project.update({
+      where: { id },
+      data,
+    });
+
+    return { data: updated };
+  }
+
   async deleteProject(userId: string, id: string) {
     const project = await this.prisma.project.findFirst({
       where: { id, userId },

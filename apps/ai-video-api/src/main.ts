@@ -1,5 +1,4 @@
 import { NestFactory } from '@nestjs/core';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { ValidationPipe } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
@@ -8,6 +7,12 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // 限制请求体大小为 2MB，防止恶意大 payload 攻击
+  const express = app.getHttpAdapter().getInstance();
+  express.set('query parser', 'extended');
+  express.use(require('body-parser').json({ limit: '2mb' }));
+  express.use(require('body-parser').urlencoded({ limit: '2mb', extended: true }));
 
   // 校验关键环境变量
   const requiredEnvVars = ['JWT_SECRET', 'DATABASE_URL'];

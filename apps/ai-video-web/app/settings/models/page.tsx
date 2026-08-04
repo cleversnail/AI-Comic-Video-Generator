@@ -12,6 +12,7 @@ import { modelsApi, AIModel, UserApiKey, ModelParameter } from "@/lib/api";
 import { CostPanel } from "@/components/cost/cost-panel";
 import { useToast } from "@/components/ui/toast";
 import { getApiErrorMessage } from "@/lib/error";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const capabilityConfig: Record<string, { name: string; icon: string; description: string; color: string }> = {
   llm: { name: "文本生成", icon: "📝", description: "故事创作、分镜拆分、对话生成", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
@@ -97,6 +98,7 @@ export default function ModelsPage() {
   const [apiKey, setApiKey] = useState("");
   const [alias, setAlias] = useState("");
   const [customModelName, setCustomModelName] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: models = [], isLoading: modelsLoading } = useQuery<AIModel[]>({ queryKey: ["models"], queryFn: () => modelsApi.listModels() as unknown as AIModel[] });
   const { data: apiKeys = [], isLoading: keysLoading } = useQuery<UserApiKey[]>({ queryKey: ["apiKeys"], queryFn: () => modelsApi.listMyApiKeys() as unknown as UserApiKey[] });
@@ -354,7 +356,7 @@ export default function ModelsPage() {
                 </div>
                 <div className="flex gap-3">
                   {editingKeyId && (
-                    <Button variant="outline" className="flex-1 text-warm-orange border-warm-orange/30 hover:bg-warm-orange/10" onClick={() => deleteKeyMutation.mutate(editingKeyId)}>删除</Button>
+                    <Button variant="outline" className="flex-1 text-warm-orange border-warm-orange/30 hover:bg-warm-orange/10" onClick={() => setShowDeleteConfirm(true)}>删除</Button>
                   )}
                   <Button className="flex-1 gap-2" onClick={handleSave} disabled={(!editingKeyId && !apiKey.trim()) || isPending} isLoading={isPending}>
                     <CheckIcon className="w-4 h-4" />
@@ -366,6 +368,17 @@ export default function ModelsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Delete API Key Confirm */}
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => { if (editingKeyId) deleteKeyMutation.mutate(editingKeyId); }}
+        title="确认删除 API Key"
+        description="删除后需要重新配置才能使用该模型，确定要删除吗？"
+        confirmText="删除"
+        variant="danger"
+      />
     </div>
   );
 }

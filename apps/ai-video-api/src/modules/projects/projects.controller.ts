@@ -38,6 +38,16 @@ export class ProjectsController {
     return this.projectsService.createProject(userId, dto);
   }
 
+  @Patch(':id')
+  @ApiOperation({ summary: '更新项目' })
+  async updateProject(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateProjectDto>,
+  ) {
+    return this.projectsService.updateProject(userId, id, dto);
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: '删除项目' })
   async deleteProject(@CurrentUser('id') userId: string, @Param('id') id: string) {

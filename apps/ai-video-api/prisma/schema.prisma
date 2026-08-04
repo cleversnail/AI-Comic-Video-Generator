@@ -162,6 +162,7 @@ model Shot {
   resultUrl   String? @map("result_url") @db.Text
   firstFrameUrl  String? @map("first_frame_url") @db.Text   // 首帧
   lastFrameUrl   String? @map("last_frame_url") @db.Text    // 尾帧
+  audioUrl       String? @map("audio_url") @db.Text         // 模型原生生成的配音
   duration    Int     @default(3000)
 
   storyboardId String      @map("storyboard_id")

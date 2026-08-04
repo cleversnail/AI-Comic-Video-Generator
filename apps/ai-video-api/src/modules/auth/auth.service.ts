@@ -79,6 +79,9 @@ export class AuthService {
   }
 
   private signToken(userId: string, email: string): string {
-    return this.jwtService.sign({ sub: userId, email });
+    return this.jwtService.sign(
+      { sub: userId, email },
+      { expiresIn: '7d' },
+    );
   }
 }

@@ -43,6 +43,8 @@ export class GenerationsService {
       firstFrameUrl: (shotParams as Record<string, unknown>).firstFrameUrl || null,
       duration: dto.parameters?.duration || 5,
       resolution: dto.parameters?.resolution || '720p',
+      aspectRatio: project.aspectRatio || '9:16',
+      generateAudio: dto.parameters?.generateAudio ?? true,
       modelId: dto.parameters?.modelId || dto.modelId,
     };
 

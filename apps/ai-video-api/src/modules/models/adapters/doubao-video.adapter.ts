@@ -52,9 +52,20 @@ export class DoubaoVideoAdapter implements VideoAdapter {
       }
 
       // Ark 平台视频生成接口
-      // 优先使用用户选择的模型，否则使用默认值
-      const modelName = input.modelId || 'doubao-seedance-2-0-260128';
-      this.logger.log(`Using model: ${modelName}`);
+      // 模型 ID 映射：将我们的内部 ID 映射到火山引擎平台的实际模型名称
+      const modelMapping: Record<string, string> = {
+        'seedance': 'doubao-seedance-2-0-mini-260615',
+        'doubao': 'doubao-seedance-2-0-mini-260615',
+        'doubao-seedance-2-0-mini': 'doubao-seedance-2-0-mini-260615',
+        'doubao-seedance-2-0-mini-260615': 'doubao-seedance-2-0-mini-260615',
+      };
+
+      // 如果 input.modelId 是我们的内部 ID，使用映射；否则使用默认值
+      const modelName = modelMapping[input.modelId || ''] || 'doubao-seedance-2-0-mini-260615';
+      this.logger.log(`Using model: ${modelName} (input.modelId: ${input.modelId})`);
+
+      // 使用项目画面比例，而非从分辨率推导
+      const aspectRatio = input.aspectRatio || '9:16';
 
       const response = await firstValueFrom(
         this.httpService.post(
@@ -62,8 +73,8 @@ export class DoubaoVideoAdapter implements VideoAdapter {
           {
             model: modelName,
             content,
-            generate_audio: false,  // 不生成音频
-            ratio: input.resolution === '720p' ? '9:16' : '16:9',  // 根据分辨率设置比例
+            generate_audio: input.generateAudio ?? true,
+            ratio: aspectRatio,
             duration: input.duration || 5,
             watermark: false,
           },
@@ -142,10 +153,18 @@ export class DoubaoVideoAdapter implements VideoAdapter {
                      data.result?.video_url ||
                      data.result?.url;
 
+    // 提取音频 URL
+    const audioUrl = data.content?.audio_url ||
+                     data.output?.audio_url ||
+                     data.audio_url ||
+                     data.result?.audio_url ||
+                     undefined;
+
     return {
       taskId,
       status,
       url: videoUrl,
+      audioUrl,
       duration: data.duration,
     };
   }
@@ -184,12 +203,20 @@ export class DoubaoVideoAdapter implements VideoAdapter {
                          data.result?.video_url ||
                          data.result?.url;
 
-        this.logger.log(`Task ${taskId} completed, videoUrl: ${videoUrl?.substring(0, 100)}`);
+        // 提取音频 URL（模型原生生成的配音）
+        const audioUrl = data.content?.audio_url ||
+                         data.output?.audio_url ||
+                         data.audio_url ||
+                         data.result?.audio_url ||
+                         undefined;
+
+        this.logger.log(`Task ${taskId} completed, videoUrl: ${videoUrl?.substring(0, 100)}, audioUrl: ${audioUrl?.substring(0, 100)}`);
 
         return {
           taskId,
           status: 'completed',
           url: videoUrl,
+          audioUrl,
           duration: data.duration,
         };
       }

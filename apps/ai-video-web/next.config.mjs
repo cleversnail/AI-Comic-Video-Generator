@@ -48,6 +48,16 @@ const nextConfig = {
         hostname: '*.googleapis.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: '*.volces.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.volcengine.com',
+        pathname: '/**',
+      },
     ],
   },
 };

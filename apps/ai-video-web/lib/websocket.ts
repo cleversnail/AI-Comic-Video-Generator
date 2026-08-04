@@ -128,32 +128,64 @@ export function useNotifications(onNotification?: (data: Notification) => void) 
   }, []);
 }
 
-// 自动连接 Hook
+// 自动连接 Hook（登录后自动建立连接）
 export function useSocketConnection() {
   const [isConnected, setIsConnected] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
 
+  // 监听 token 变化（登录/登出）
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
+    const readToken = () => setToken(localStorage.getItem('accessToken'));
+    readToken();
 
-    if (token && !socket) {
-      const s = connectSocket(token);
+    // 监听 storage 事件（跨 tab）和自定义事件（同 tab 登录）
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'accessToken') readToken();
+    };
+    const handleAuthChange = () => readToken();
 
-      const handleConnect = () => setIsConnected(true);
-      const handleDisconnect = () => setIsConnected(false);
-
-      s.on('connect', handleConnect);
-      s.on('disconnect', handleDisconnect);
-
-      if (s.connected) {
-        setIsConnected(true);
-      }
-
-      return () => {
-        s.off('connect', handleConnect);
-        s.off('disconnect', handleDisconnect);
-      };
-    }
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('auth-changed', handleAuthChange);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('auth-changed', handleAuthChange);
+    };
   }, []);
+
+  // token 变化时自动连接/断开
+  useEffect(() => {
+    if (!token) {
+      // 无 token 时断开现有连接
+      if (socket) {
+        disconnectSocket();
+        setIsConnected(false);
+      }
+      return;
+    }
+
+    // 已有连接且 token 相同，跳过
+    if (socket?.connected) {
+      setIsConnected(true);
+      return;
+    }
+
+    const s = connectSocket(token);
+
+    const handleConnect = () => setIsConnected(true);
+    const handleDisconnect = () => setIsConnected(false);
+
+    s.on('connect', handleConnect);
+    s.on('disconnect', handleDisconnect);
+
+    if (s.connected) {
+      setIsConnected(true);
+    }
+
+    return () => {
+      s.off('connect', handleConnect);
+      s.off('disconnect', handleDisconnect);
+    };
+  }, [token]);
 
   return { isConnected, socket: getSocket() };
 }

@@ -91,11 +91,18 @@ export class GenerationWorker implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      // Update shot resultUrl if applicable
+      // Update shot resultUrl and audioUrl if applicable
       if (job.data.shotId && result.url) {
+        const shotUpdate: Record<string, unknown> = {
+          resultUrl: result.url as string,
+          status: 'completed',
+        };
+        if (result.audioUrl) {
+          shotUpdate.audioUrl = result.audioUrl as string;
+        }
         await this.prisma.shot.update({
           where: { id: job.data.shotId },
-          data: { resultUrl: result.url as string, status: 'completed' },
+          data: shotUpdate,
         });
       }
 
@@ -165,11 +172,13 @@ export class GenerationWorker implements OnModuleInit, OnModuleDestroy {
         lastFrameUrl: input.lastFrameUrl,
         duration: input.duration,
         resolution: input.resolution,
+        aspectRatio: input.aspectRatio,
+        generateAudio: input.generateAudio,
         modelId: input.modelId,  // 传递模型 ID
       },
       { apiKey, baseUrl }
     );
-    return { taskId: result.taskId, url: result.url, duration: result.duration, status: result.status };
+    return { taskId: result.taskId, url: result.url, audioUrl: result.audioUrl, duration: result.duration, status: result.status };
   }
 
   private async processTtsGeneration(

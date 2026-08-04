@@ -152,9 +152,10 @@ export default function LoginPage() {
                     title="刷新验证码"
                   >
                     {captchaSvg ? (
-                      <div
-                        dangerouslySetInnerHTML={{ __html: captchaSvg }}
-                        className="w-[100px] h-[36px] flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"
+                      <img
+                        src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(captchaSvg)}`}
+                        alt="验证码"
+                        className="w-[100px] h-[36px] object-contain"
                       />
                     ) : (
                       <span className="text-xs text-text-disabled px-2">加载中...</span>

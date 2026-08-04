@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/navigation/back-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { WandIcon, PlayIcon, RefreshCwIcon, FilmIcon } from "@/components/icons";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui/loading-states";
-import { storyboardApi, generationsApi, modelsApi, GenerationTask } from "@/lib/api";
+import { storyboardApi, generationsApi, modelsApi, GenerationTask, Shot } from "@/lib/api";
 import { useTaskProgress, TaskProgress } from "@/lib/websocket";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { useToast } from "@/components/ui/toast";
 import { getApiErrorMessage } from "@/lib/error";
@@ -26,7 +26,6 @@ export default function GeneratePage() {
   // WebSocket 任务进度监听
   const handleTaskProgress = useCallback((data: TaskProgress) => {
     console.log('Task progress received:', data);
-    // 可以在这里添加 toast 通知
   }, []);
 
   useTaskProgress(projectId, handleTaskProgress);
@@ -37,11 +36,10 @@ export default function GeneratePage() {
     queryFn: () => storyboardApi.getStoryboard(projectId),
   });
 
-  // 获取生成任务列表（WebSocket 会自动刷新，这里作为初始加载）
+  // 获取生成任务列表
   const { data: tasks = [], isLoading: tasksLoading, error: tasksError } = useQuery({
     queryKey: ["generation-tasks", projectId],
     queryFn: () => generationsApi.listTasks(projectId),
-    // 移除 refetchInterval，使用 WebSocket 实时更新
   });
 
   // 获取可用的视频模型
@@ -59,7 +57,18 @@ export default function GeneratePage() {
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [duration, setDuration] = useState(3);
   const [resolution, setResolution] = useState("1080p");
+  const [generateAudio, setGenerateAudio] = useState(true);
   const [previewVideo, setPreviewVideo] = useState<{ url: string; shotId: string } | null>(null);
+  const [pendingShotIds, setPendingShotIds] = useState<Set<string>>(new Set());
+  const [showAllShots, setShowAllShots] = useState(false);
+  const [confirmUnpreviewedShotId, setConfirmUnpreviewedShotId] = useState<string | null>(null);
+  const [confirmGenerateAll, setConfirmGenerateAll] = useState(false);
+
+  // 分镜分类：已预览（有 resultUrl 或 imageUrl）vs 未预览
+  const shots = storyboard?.shots || [];
+  const previewedShots = useMemo(() => shots.filter((s: Shot) => s.resultUrl || s.imageUrl), [shots]);
+  const unpreviewedShots = useMemo(() => shots.filter((s: Shot) => !s.resultUrl && !s.imageUrl), [shots]);
+  const displayShots = showAllShots ? shots : previewedShots;
 
   // 获取用户已配置的视频模型列表
   const configuredVideoKeys = apiKeys.filter((k: { capability?: string }) => k.capability === "video");
@@ -69,17 +78,9 @@ export default function GeneratePage() {
   const selectedModelAlias = selectedModelKey?.alias || "";
   const isModelConfigured = !!selectedModelKey;
 
-  // 获取实际使用的模型名称（使用用户配置的别名）
-  const getActualModelId = () => {
-    if (selectedModelAlias) return selectedModelAlias;
-    return selectedModel;
-  };
-
-  // 设置默认模型 - 优先使用用户已配置的视频模型
+  // 设置默认模型
   useEffect(() => {
     if (videoModels.length === 0 || selectedModel) return;
-
-    // 优先使用已配置的视频模型
     const configuredModel = configuredVideoKeys.find((k: { capability?: string }) => k.capability === "video");
     if (configuredModel) {
       setSelectedModel(configuredModel.modelId);
@@ -95,8 +96,11 @@ export default function GeneratePage() {
         capability: "video",
         modelId: selectedModel,
         shotId,
-        parameters: { duration, resolution, modelId: getActualModelId() },  // 使用自定义模型名称或选中的模型变体
+        parameters: { duration, resolution, generateAudio },
       }),
+    onMutate: (shotId) => {
+      setPendingShotIds((prev) => new Set(prev).add(shotId));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["generation-tasks", projectId] });
       toast.success("任务已加入生成队列");
@@ -104,38 +108,68 @@ export default function GeneratePage() {
     onError: (error: unknown) => {
       toast.error("生成任务创建失败", getApiErrorMessage(error));
     },
+    onSettled: (_data, _error, shotId) => {
+      setPendingShotIds((prev) => {
+        const next = new Set(prev);
+        next.delete(shotId);
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: ["generation-tasks", projectId] });
+    },
   });
 
-  // 生成单个分镜
-  const handleGenerateShot = (shotId: string) => {
+  // 生成单个分镜（已预览的直接生成，未预览的弹确认框）
+  const handleGenerateShot = (shotId: string, hasPreview: boolean) => {
     if (!selectedModel) {
       toast.error("请先选择视频模型");
+      return;
+    }
+    if (!hasPreview) {
+      setConfirmUnpreviewedShotId(shotId);
       return;
     }
     createTaskMutation.mutate(shotId);
   };
 
-  // 批量生成所有分镜
+  // 批量生成：默认只生成已预览的
   const handleGenerateAll = () => {
     if (!selectedModel) {
       toast.error("请先选择视频模型");
       return;
     }
-    if (!storyboard?.shots?.length) {
-      toast.error("暂无分镜");
+    if (previewedShots.length === 0) {
+      toast.error("暂无已预览的分镜，请先生成预览图");
       return;
     }
-    storyboard.shots.forEach((shot) => {
+    // 如果有未预览的分镜且当前未展开，提示一下
+    if (unpreviewedShots.length > 0 && !showAllShots) {
+      setConfirmGenerateAll(true);
+      return;
+    }
+    // 展开状态下，全部生成（含未预览的需确认）
+    doGenerateAll(displayShots);
+  };
+
+  const doGenerateAll = (targetShots: Shot[]) => {
+    targetShots.forEach((shot) => {
       createTaskMutation.mutate(shot.id);
     });
   };
 
-  // 获取分镜对应的任务状态
-  const getTaskForShot = (shotId: string): GenerationTask | undefined => {
-    return tasks.find((t) => t.shotId === shotId);
-  };
+  // 构建 shotId → 最新任务的映射
+  const taskMap = useMemo(() => {
+    const map = new Map<string, GenerationTask>();
+    for (const task of tasks) {
+      const existing = map.get(task.shotId || "");
+      if (!existing || new Date(task.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
+        if (task.shotId) map.set(task.shotId, task);
+      }
+    }
+    return map;
+  }, [tasks]);
 
-  // 获取状态显示文本
+  const getTaskForShot = (shotId: string): GenerationTask | undefined => taskMap.get(shotId);
+
   const getStatusText = (status: string) => {
     switch (status) {
       case "queued": return "排队中";
@@ -146,7 +180,6 @@ export default function GeneratePage() {
     }
   };
 
-  // 获取状态变体
   const getStatusVariant = (status: string) => {
     switch (status) {
       case "completed": return "success";
@@ -158,7 +191,16 @@ export default function GeneratePage() {
 
   const isLoading = storyboardLoading || tasksLoading;
   const error = storyboardError || tasksError;
-  const shots = storyboard?.shots || [];
+
+  // 视频预览 ESC 关闭
+  useEffect(() => {
+    if (!previewVideo) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewVideo(null);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [previewVideo]);
 
   // 错误状态
   if (error) {
@@ -179,25 +221,33 @@ export default function GeneratePage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <BackButton href={`/projects/${projectId}/studio`} label="故事编排" className="mb-2" />
           <h1 className="font-display text-3xl font-bold text-white mb-1">视频生成</h1>
           <p className="text-text-secondary">将分镜转为视频片段</p>
         </div>
-        <Button className="gap-2" onClick={handleGenerateAll} disabled={isLoading || !selectedModel || shots.length === 0}>
+        <Button
+          className="gap-2"
+          onClick={handleGenerateAll}
+          disabled={isLoading || !selectedModel || previewedShots.length === 0}
+        >
           <WandIcon className="w-4 h-4" />
-          全部生成
+          {showAllShots && unpreviewedShots.length > 0
+            ? `全部生成（含 ${unpreviewedShots.length} 个未预览）`
+            : "全部生成"}
         </Button>
       </div>
 
+      {/* 生成配置 */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>生成配置</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 items-end">
-            <div className="flex-1">
+          <div className="flex gap-4 items-end pb-5">
+            <div className="flex-1 relative">
               <label className="block text-sm text-text-secondary mb-1">模型</label>
               <select
                 className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
@@ -215,26 +265,19 @@ export default function GeneratePage() {
                 })}
               </select>
               {!isModelConfigured && selectedModel && (
-                <p className="text-xs text-warm-orange mt-1">
-                  ⚠️ 未配置，请先<Link href="/settings/models" className="text-anime-purple hover:underline ml-1">配置</Link>
+                <p className="absolute top-full left-0 right-0 text-xs text-warm-orange mt-1 flex items-center gap-1 whitespace-nowrap">
+                  <span>⚠️</span>
+                  <span>未配置，请先</span>
+                  <Link href="/settings/models" className="text-anime-purple hover:underline">配置</Link>
                 </p>
               )}
             </div>
-
-            {/* 模型版本 - 显示用户配置的模型名称 */}
             <div className="flex-1">
               <label className="block text-sm text-text-secondary mb-1">模型版本</label>
-              <select
-                className="w-full h-10 rounded-lg border border-divider bg-panel-mid px-3 text-sm text-white"
-                value={selectedModelAlias || selectedModel}
-                disabled
-              >
-                <option value={selectedModelAlias || selectedModel}>
-                  {selectedModelAlias || "默认版本"}
-                </option>
-              </select>
+              <div className="w-full h-10 rounded-lg border border-divider bg-panel-mid/50 px-3 flex items-center text-sm text-text-secondary">
+                {selectedModelAlias || "默认版本"}
+              </div>
             </div>
-
             <div className="w-28">
               <label className="block text-sm text-text-secondary mb-1">时长</label>
               <select
@@ -247,7 +290,6 @@ export default function GeneratePage() {
                 <option value={10}>10 秒</option>
               </select>
             </div>
-
             <div className="w-28">
               <label className="block text-sm text-text-secondary mb-1">分辨率</label>
               <select
@@ -259,10 +301,31 @@ export default function GeneratePage() {
                 <option value="720p">720p</option>
               </select>
             </div>
+            <div className="flex items-center">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none h-10 px-1">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={generateAudio}
+                  onClick={() => setGenerateAudio(!generateAudio)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    generateAudio ? "bg-anime-purple" : "bg-divider"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                      generateAudio ? "translate-x-[18px]" : "translate-x-[3px]"
+                    }`}
+                  />
+                </button>
+                <span className="text-sm text-text-secondary whitespace-nowrap">包含配音</span>
+              </label>
+            </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* 内容区 */}
       {isLoading ? (
         <LoadingState message="加载分镜中..." />
       ) : shots.length === 0 ? (
@@ -276,76 +339,122 @@ export default function GeneratePage() {
           }}
         />
       ) : (
-        <div className="space-y-3">
-          {shots.map((shot) => {
-            const task = getTaskForShot(shot.id);
-            const status = task?.status || "pending";
-            const isProcessing = status === "queued" || status === "processing";
-            const hasVideo = status === "completed" && task?.result?.url;
-
-            return (
-              <div key={shot.id} className="flex items-center gap-4 p-4 rounded-lg bg-panel-deep border border-divider">
-                <span className="text-text-disabled font-mono text-sm w-8">#{shot.sequence}</span>
-
-                {/* 分镜预览图 / 视频缩略图 */}
-                <div className="w-20 h-20 rounded-lg bg-panel-mid overflow-hidden flex-shrink-0 relative group">
-                  {hasVideo ? (
-                    <div className="w-full h-full relative">
-                      <video
-                        src={task!.result!.url!}
-                        className="w-full h-full object-cover"
-                        muted
-                        playsInline
-                        preload="metadata"
-                      />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <PlayIcon className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                  ) : shot.imageUrl ? (
-                    <Image src={shot.imageUrl} alt={`Shot ${shot.sequence}`} width={80} height={80} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <PlayIcon className="w-6 h-6 text-text-disabled" />
-                    </div>
-                  )}
+        <>
+          {/* 状态提示条 */}
+          {unpreviewedShots.length > 0 && (
+            <div className="mb-4 p-4 rounded-xl bg-panel-deep border border-divider flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-neon-cyan/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-neon-cyan text-sm">✓</span>
                 </div>
-
-                <div className="flex-1">
-                  <p className="text-white font-medium">{shot.prompt?.substring(0, 50) || `分镜 ${shot.sequence}`}</p>
-                  {hasVideo && (
-                    <p className="text-xs text-neon-cyan mt-1">✓ 视频已生成</p>
-                  )}
-                  {task?.errorMessage && (
-                    <p className="text-xs text-warm-orange mt-1">{task.errorMessage}</p>
-                  )}
+                <div>
+                  <p className="text-sm text-white">
+                    <span className="text-neon-cyan font-medium">{previewedShots.length}</span> 个分镜已生成预览，可直接生成视频
+                  </p>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    还有 <span className="text-warm-orange">{unpreviewedShots.length}</span> 个分镜未预览，建议先生成预览图，预览图可以提前确认画面构图、角色形象和镜头角度是否符合预期，避免视频生成后才发现画面不对而浪费额度
+                  </p>
                 </div>
-
-                <Badge variant={getStatusVariant(status)}>
-                  {isProcessing && (
-                    <span className="inline-block w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin mr-1" />
-                  )}
-                  {getStatusText(status)}
-                </Badge>
-
-                {/* 操作按钮 */}
-                {hasVideo ? (
-                  <Button size="sm" variant="outline" className="gap-1" onClick={() => setPreviewVideo({ url: task.result!.url!, shotId: shot.id })}>
-                    <PlayIcon className="w-3 h-3" /> 预览
-                  </Button>
-                ) : status === "failed" ? (
-                  <Button size="sm" variant="outline" className="gap-1" onClick={() => handleGenerateShot(shot.id)}>
-                    <RefreshCwIcon className="w-3 h-3" /> 重试
-                  </Button>
-                ) : !isProcessing ? (
-                  <Button size="sm" className="gap-1" onClick={() => handleGenerateShot(shot.id)}>
-                    <WandIcon className="w-3 h-3" /> 生成
-                  </Button>
-                ) : null}
               </div>
-            );
-          })}
-        </div>
+              {!showAllShots && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1 flex-shrink-0"
+                  onClick={() => setShowAllShots(true)}
+                >
+                  查看全部 {shots.length} 个分镜
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* 分镜列表 */}
+          <div className="space-y-3">
+            {displayShots.map((shot: Shot) => {
+              const task = getTaskForShot(shot.id);
+              const status = task?.status || "pending";
+              const isProcessing = status === "queued" || status === "processing" || pendingShotIds.has(shot.id);
+              const hasVideo = status === "completed" && task?.result?.url;
+              const hasPreview = !!(shot.resultUrl || shot.imageUrl);
+              const isUnpreviewed = !hasPreview;
+
+              return (
+                <div
+                  key={shot.id}
+                  className={`flex items-center gap-4 p-4 rounded-lg border transition-colors ${
+                    isUnpreviewed
+                      ? "bg-panel-deep/60 border-warm-orange/20 opacity-80"
+                      : "bg-panel-deep border-divider"
+                  }`}
+                >
+                  <span className="text-text-disabled font-mono text-sm w-8">#{shot.sequence}</span>
+
+                  {/* 缩略图 */}
+                  <div className="w-20 h-20 rounded-lg bg-panel-mid overflow-hidden flex-shrink-0 relative group">
+                    {hasVideo ? (
+                      <div className="w-full h-full relative">
+                        <video
+                          src={task!.result!.url!}
+                          className="w-full h-full object-cover"
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <PlayIcon className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                    ) : hasPreview ? (
+                      <Image src={shot.resultUrl || shot.imageUrl!} alt={`Shot ${shot.sequence}`} width={80} height={80} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <PlayIcon className="w-6 h-6 text-text-disabled" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 信息 */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium truncate">{shot.prompt?.substring(0, 50) || `分镜 ${shot.sequence}`}</p>
+                    {hasVideo && <p className="text-xs text-neon-cyan mt-1">✓ 视频已生成</p>}
+                    {isUnpreviewed && !hasVideo && <p className="text-xs text-warm-orange mt-1">⚠ 未生成预览图</p>}
+                    {task?.errorMessage && <p className="text-xs text-warm-orange mt-1">{task.errorMessage}</p>}
+                  </div>
+
+                  {/* 状态 */}
+                  <Badge variant={isUnpreviewed && !hasVideo && !isProcessing ? "warning" : getStatusVariant(status)}>
+                    {isProcessing && (
+                      <span className="inline-block w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin mr-1" />
+                    )}
+                    {isUnpreviewed && !hasVideo && !isProcessing ? "未预览" : getStatusText(status)}
+                  </Badge>
+
+                  {/* 操作按钮 */}
+                  {hasVideo ? (
+                    <Button size="sm" variant="outline" className="gap-1" onClick={() => setPreviewVideo({ url: task.result!.url!, shotId: shot.id })}>
+                      <PlayIcon className="w-3 h-3" /> 预览
+                    </Button>
+                  ) : status === "failed" ? (
+                    <Button size="sm" variant="outline" className="gap-1" onClick={() => handleGenerateShot(shot.id, hasPreview)}>
+                      <RefreshCwIcon className="w-3 h-3" /> 重试
+                    </Button>
+                  ) : !isProcessing ? (
+                    <Button
+                      size="sm"
+                      variant={isUnpreviewed ? "outline" : "primary"}
+                      className="gap-1"
+                      onClick={() => handleGenerateShot(shot.id, hasPreview)}
+                    >
+                      <WandIcon className="w-3 h-3" />
+                      {isUnpreviewed ? "跳过预览" : "生成"}
+                    </Button>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* 视频预览弹窗 */}
@@ -362,7 +471,7 @@ export default function GeneratePage() {
             </div>
             <div className="flex items-center justify-between mt-4">
               <p className="text-white text-sm">
-                分镜 #{shots.find(s => s.id === previewVideo.shotId)?.sequence || '?'} 视频预览
+                分镜 #{shots.find((s: Shot) => s.id === previewVideo.shotId)?.sequence || '?'} 视频预览
               </p>
               <div className="flex gap-2">
                 <a href={previewVideo.url} download target="_blank" rel="noopener noreferrer">
@@ -379,6 +488,27 @@ export default function GeneratePage() {
           </div>
         </div>
       )}
+
+      {/* 确认：跳过预览直接生成视频 */}
+      <ConfirmDialog
+        open={!!confirmUnpreviewedShotId}
+        onClose={() => setConfirmUnpreviewedShotId(null)}
+        onConfirm={() => { if (confirmUnpreviewedShotId) createTaskMutation.mutate(confirmUnpreviewedShotId); }}
+        title="跳过预览，直接生成视频？"
+        description="该分镜未生成预览图，AI 将直接根据文字描述生成视频，结果可能与预期不符。建议先生成预览确认画面。"
+        confirmText="直接生成"
+        variant="danger"
+      />
+
+      {/* 确认：批量生成（仅已预览的） */}
+      <ConfirmDialog
+        open={confirmGenerateAll}
+        onClose={() => setConfirmGenerateAll(false)}
+        onConfirm={() => doGenerateAll(previewedShots)}
+        title={`只生成已预览的 ${previewedShots.length} 个分镜？`}
+        description={`还有 ${unpreviewedShots.length} 个分镜未生成预览图，将跳过这些分镜。如需全部生成，请先展开查看全部分镜。`}
+        confirmText={`生成 ${previewedShots.length} 个`}
+      />
     </div>
   );
 }
